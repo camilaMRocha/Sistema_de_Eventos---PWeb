@@ -1,9 +1,9 @@
 # Sistema_de_Eventos---PWeb
 
-* Nome do projeto -
+* Nome do projeto -HeyEvents
 * Tema escolhido - Sistema de eventos
-* Objetivo do sistema -
-* Tecnologias que serão utilizadas durante o semestre - Python
+* Objetivo do sistema -Facilitar o planejamento e a contratação de serviços para eventos (casamentos, aniversários, formaturas), fornecendo uma plataforma web onde clientes possam buscar locais e profissionais disponíveis, simular orçamentos integrados e realizar reservas de forma rápida, segura e centralizada.
+* Tecnologias que serão utilizadas durante o semestre - Python, FastAPI, MySQL, HTML, CSS.
 * Breve descrição do funcionamento do sistema – O sistema tem como objetivo facilitar a organização de eventos como casamentos, aniversários, festas e formaturas, conectando clientes a espaços, estruturas e profissionais (buffet, decoração, fotografia, som, etc.) necessários para a realização do evento. Por meio da plataforma, o usuário poderá pesquisar locais e serviços disponíveis, verificar datas, orçamentos e realizar a contratação de forma centralizada, acompanhando todo o planejamento até a data do evento
 * Realizar o levantamento dos requisitos do sistema, descrevendo:
 
