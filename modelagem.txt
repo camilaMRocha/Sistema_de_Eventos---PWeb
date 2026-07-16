@@ -1,0 +1,131 @@
+------------------------------------------------------------------------
+1. LEVANTAMENTO DAS ENTIDADES
+------------------------------------------------------------------------
+1. Usuario
+2. Cliente
+3. Fornecedor
+4. Local
+5. Servico
+6. Evento
+7. Reserva
+8. Pagamento
+9. Avaliacao
+10. Notificacao
+
+------------------------------------------------------------------------
+2. LEVANTAMENTO DOS ATRIBUTOS
+------------------------------------------------------------------------
+* Usuario: id_usuario, email, senha, tipo_usuario, data_cadastro
+* Cliente: id_cliente, id_usuario, nome, cpf, telefone
+* Fornecedor: id_fornecedor, id_usuario, nome_fornecedor, cnpj, telefone, categoria
+* Local: id_local, nome, endereco, capacidade, preco_diaria, descricao
+* Servico: id_servico, id_fornecedor, nome, categoria, preco, descricao
+* Evento: id_evento, id_cliente, nome_evento, tipo_evento, data_evento, orcamento_estimado
+* Reserva: id_reserva, id_evento, id_local, status_reserva, data_reserva, valor_total
+* Pagamento: id_pagamento, id_reserva, valor, data_pagamento, metodo_pagamento, status_pagamento
+* Avaliacao: id_avaliacao, id_cliente, id_local, id_servico, nota, comentario, data_avaliacao
+* Notificacao: id_notificacao, id_usuario, mensagem, data_envio, visualizada
+
+------------------------------------------------------------------------
+3. DEFINIÇÃO DAS CHAVES
+------------------------------------------------------------------------
+* Usuario
+    - id_usuario (PK)
+
+* Cliente
+    - id_cliente (PK)
+    - id_usuario (FK) -> Usuario
+
+* Fornecedor
+    - id_fornecedor (PK)
+    - id_usuario (FK) -> Usuario
+
+* Local
+    - id_local (PK)
+
+* Servico
+    - id_servico (PK)
+    - id_fornecedor (FK) -> Fornecedor
+
+* Evento
+    - id_evento (PK)
+    - id_cliente (FK) -> Cliente
+
+* Reserva
+    - id_reserva (PK)
+    - id_evento (FK) -> Evento
+    - id_local (FK) -> Local
+
+* Pagamento
+    - id_pagamento (PK)
+    - id_reserva (FK) -> Reserva
+
+* Avaliacao
+    - id_avaliacao (PK)
+    - id_cliente (FK) -> Cliente
+    - id_local (FK) -> Local
+    - id_servico (FK) -> Servico
+
+* Notificacao
+    - id_notificacao (PK)
+    - id_usuario (FK) -> Usuario
+
+------------------------------------------------------------------------
+4. RELACIONAMENTOS
+------------------------------------------------------------------------
+* Usuario possui Cliente
+* Usuario possui Fornecedor
+* Cliente cria Evento
+* Fornecedor oferece Servico
+* Evento possui Reserva
+* Reserva gera Pagamento
+* Cliente realiza Avaliacao
+* Local recebe Avaliacao
+* Servico recebe Avaliacao
+* Usuario recebe Notificacao
+
+------------------------------------------------------------------------
+5. CARDINALIDADE
+------------------------------------------------------------------------
+* Usuario e Cliente -- 1:1
+  Cada conta de usuário do tipo cliente pertence a apenas um cliente cadastrado, e um cliente cadastrado possui apenas uma conta de usuário para login.
+
+* Usuario e Fornecedor -- 1:1
+  Uma conta de usuário do tipo fornecedor pertence a apenas um parceiro cadastrado, e um fornecedor possui apenas um acesso ao sistema.
+
+* Cliente e Evento -- 1:N
+  Um cliente pode planejar e cadastrar vários eventos no sistema (ex: um casamento e depois um aniversário), mas cada evento pertence a apenas um cliente dono.
+
+* Fornecedor e Servico -- 1:N
+  Um único fornecedor pode oferecer e cadastrar vários serviços diferentes em seu catálogo, mas cada serviço cadastrado pertence a apenas um fornecedor.
+
+* Evento e Reserva -- 1:N
+  Um evento pode possuir várias reservas contratadas (ex: reserva do espaço e reserva do buffet), mas cada uma dessas reservas está vinculada a apenas um evento específico.
+
+* Reserva e Pagamento -- 1:N
+  Uma reserva pode ter seus pagamentos parcelados em várias vezes, gerando mais de um registro de transação, mas cada pagamento pertence a uma única reserva.
+
+* Cliente e Avaliacao -- 1:N
+  Um cliente pode enviar várias avaliações de locais ou serviços diferentes pós-evento, mas cada avaliação individual é escrita por um único cliente.
+
+* Local e Avaliacao -- 1:N
+  Um local de eventos pode receber diversas avaliações de clientes diferentes, mas cada avaliação registrada aponta para apenas um local específico.
+
+* Servico e Avaliacao -- 1:N
+  Um serviço pode receber várias avaliações ao longo do tempo, mas cada comentário de avaliação se refere a apenas um serviço específico.
+
+* Usuario e Notificacao -- 1:N
+  Um usuário pode receber diversas notificações do sistema (alertas, lembretes), mas cada notificação enviada é direcionada para apenas um usuário específico.
+
+------------------------------------------------------------------------
+6. REGRAS DE NEGÓCIO
+------------------------------------------------------------------------
+* RN01 - Unicidade de Cadastro: Não podem existir dois usuários cadastrados com o mesmo e-mail no sistema.
+* RN02 - Vínculo de Conta: Um cliente ou fornecedor só pode ser cadastrado no sistema se estiver associado a um usuário de login previamente ativo.
+* RN03 - Orçamento Dinâmico: O orçamento estimado de um evento deve ser a soma exata de todos os serviços e locais adicionados ao pacote daquele evento.
+* RN04 - Conflito de Agenda (Disponibilidade): Um local ou serviço de fornecedor não pode ser reservado para mais de um evento na mesma data.
+* RN05 - Status de Reserva: Toda nova reserva deve iniciar com o status "Pendente" e só mudar para "Confirmado" após o registro do pagamento correspondente.
+* RN06 - Histórico de Pagamentos: O valor total registrado em pagamentos não pode ultrapassar o valor total acordado na reserva.
+* RN07 - Avaliação Pós-Evento: Um cliente só pode avaliar e comentar sobre um local ou serviço se a data do evento correspondente já tiver passado e a reserva estiver com status "Concluído".
+* RN08 - Regra de Cancelamento: O cancelamento de uma reserva altera o status da reserva para "Cancelado" e libera automaticamente as datas do local e dos serviços associados para novas buscas.
+
