@@ -11,6 +11,7 @@
 8. Pagamento
 9. Avaliacao
 10. Notificacao
+11. Reserva_Servico (entidade associativa)
 
 ------------------------------------------------------------------------
 2. LEVANTAMENTO DOS ATRIBUTOS
@@ -25,6 +26,7 @@
 * Pagamento: id_pagamento, id_reserva, valor, data_pagamento, metodo_pagamento, status_pagamento
 * Avaliacao: id_avaliacao, id_cliente, id_local, id_servico, nota, comentario, data_avaliacao
 * Notificacao: id_notificacao, id_usuario, mensagem, data_envio, visualizada
+* Reserva_Servico: id_reserva_servico, id_reserva, id_servico, quantidade, valor_contratado
 
 ------------------------------------------------------------------------
 3. DEFINIÇÃO DAS CHAVES
@@ -70,6 +72,11 @@
     - id_notificacao (PK)
     - id_usuario (FK) -> Usuario
 
+* Reserva_Servico
+    - id_reserva_servico (PK)
+    - id_reserva (FK) -> Reserva
+    - id_servico (FK) -> Servico
+
 ------------------------------------------------------------------------
 4. RELACIONAMENTOS
 ------------------------------------------------------------------------
@@ -83,6 +90,7 @@
 * Local recebe Avaliacao
 * Servico recebe Avaliacao
 * Usuario recebe Notificacao
+* Reserva contrata Servico (via Reserva_Servico)
 
 ------------------------------------------------------------------------
 5. CARDINALIDADE
@@ -117,6 +125,9 @@
 * Usuario e Notificacao -- 1:N
   Um usuário pode receber diversas notificações do sistema (alertas, lembretes), mas cada notificação enviada é direcionada para apenas um usuário específico.
 
+* Reserva e Servico -- N:N (resolvida pela entidade associativa Reserva_Servico)
+  Uma reserva de evento pode contratar vários serviços diferentes (buffet, decoração, fotografia), e um mesmo serviço de catálogo pode ser contratado em várias reservas distintas ao longo do tempo. Como não há dependência funcional direta entre as duas entidades, a relação N:N é resolvida através da entidade associativa Reserva_Servico, que também carrega atributos próprios da associação (quantidade, valor_contratado no momento da contratação).
+
 ------------------------------------------------------------------------
 6. REGRAS DE NEGÓCIO
 ------------------------------------------------------------------------
@@ -128,4 +139,47 @@
 * RN06 - Histórico de Pagamentos: O valor total registrado em pagamentos não pode ultrapassar o valor total acordado na reserva.
 * RN07 - Avaliação Pós-Evento: Um cliente só pode avaliar e comentar sobre um local ou serviço se a data do evento correspondente já tiver passado e a reserva estiver com status "Concluído".
 * RN08 - Regra de Cancelamento: O cancelamento de uma reserva altera o status da reserva para "Cancelado" e libera automaticamente as datas do local e dos serviços associados para novas buscas.
+* RN09 - Exclusividade da Avaliação: Cada avaliação deve referenciar exatamente um alvo — ou um local (id_local preenchido e id_servico nulo), ou um serviço (id_servico preenchido e id_local nulo) — nunca os dois ao mesmo tempo, nem nenhum dos dois.
+
+------------------------------------------------------------------------
+8. VALIDAÇÃO DA MODELAGEM (REVISÃO DAS 3 FN)
+------------------------------------------------------------------------
+
+* Todas as entidades possuem chave primária?
+  SIM. As 11 entidades (Usuario, Cliente, Fornecedor, Local, Servico, Evento,
+  Reserva, Pagamento, Avaliacao, Notificacao, Reserva_Servico) possuem PK
+  própria, de coluna única.
+
+* Todos os relacionamentos estão corretos?
+  SIM, após a inclusão da entidade associativa Reserva_Servico, que resolve
+  a relação N:N entre Reserva e Servico (necessária para sustentar a RN03 e
+  a RN04, que tratam da reserva de serviços de fornecedores dentro de um
+  evento).
+
+* As cardinalidades representam corretamente as regras de negócio?
+  SIM. Todas as cardinalidades 1:1 e 1:N foram justificadas de acordo com as
+  regras de negócio correspondentes, e a relação N:N entre Reserva e Servico
+  foi corretamente resolvida por entidade associativa. A exclusividade da
+  Avaliacao (local OU serviço, nunca ambos) foi formalizada na RN09.
+
+* Não existem entidades duplicadas?
+  SIM. As 11 entidades têm propósitos distintos, sem sobreposição.
+
+* Não existem atributos redundantes?
+  Existem dois atributos calculados/derivados, mantidos por decisão de
+  projeto e não por falha de modelagem:
+    - Evento.orcamento_estimado (soma dos serviços e locais do pacote, RN03)
+    - Reserva.valor_total (soma dos itens contratados na reserva)
+  Ambos representam uma redundância controlada (denormalização proposital
+  por performance/histórico), documentada explicitamente aqui.
+
+* Revisão das Formas Normais:
+  - 1FN: OK. Todos os atributos são atômicos, sem listas ou valores compostos.
+  - 2FN: OK. Todas as PKs são de coluna única, portanto não há dependência
+    parcial possível.
+  - 3FN: OK, com ressalva. As únicas dependências transitivas identificadas
+    são os campos calculados citados acima (orcamento_estimado, valor_total),
+    que dependem de registros de outras tabelas (Servico, Local, Reserva_Servico).
+    Essa exceção é aceitável por ser uma decisão consciente de projeto,
+    sustentada pela RN03, e não um erro de levantamento de atributos.
 
