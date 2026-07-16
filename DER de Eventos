@@ -1,0 +1,123 @@
+                           +----------------------+
+                           |       USUARIO        |
+                           +----------------------+
+                           | PK id_usuario        |
+                           | email               |
+                           | senha               |
+                           | tipo_usuario        |
+                           | data_cadastro       |
+                           +----------------------+
+                              |1              |1
+                              |               |
+                              |               |
+                             (1:1)          (1:1)
+                              |               |
+                  +----------------+   +----------------------+
+                  |    CLIENTE     |   |    FORNECEDOR        |
+                  +----------------+   +----------------------+
+                  | PK id_cliente  |   | PK id_fornecedor     |
+                  | FK id_usuario  |   | FK id_usuario        |
+                  | nome           |   | nome_fornecedor      |
+                  | cpf            |   | cnpj                 |
+                  | telefone       |   | telefone             |
+                  +----------------+   | categoria            |
+                        |1             +----------------------+
+                        |                     |
+                       (1:N)                 (1:N)
+                        |                     |
+                 +----------------+    +--------------------+
+                 |     EVENTO     |    |      SERVICO       |
+                 +----------------+    +--------------------+
+                 | PK id_evento   |    | PK id_servico      |
+                 | FK id_cliente  |    | FK id_fornecedor   |
+                 | nome_evento    |    | nome               |
+                 | tipo_evento    |    | categoria          |
+                 | data_evento    |    | preco              |
+                 | orcamento_est. |    | descricao          |
+                 +----------------+    +--------------------+
+                        |
+                       (1:N)
+                        |
+                 +----------------+
+                 |    RESERVA     |
+                 +----------------+
+                 | PK id_reserva  |
+                 | FK id_evento   |
+                 | FK id_local    |
+                 | status         |
+                 | data_reserva   |
+                 | valor_total    |
+                 +----------------+
+                   |1          |1
+          (1:N)    |           |   (N:1)
+                   |           |
+                   |       +----------------+
+                   |       |     LOCAL      |
+                   |       +----------------+
+                   |       | PK id_local    |
+                   |       | nome           |
+                   |       | endereco       |
+                   |       | capacidade     |
+                   |       | preco_diaria   |
+                   |       | descricao      |
+                   |       +----------------+
+                   |
+                  (1:N)
+                   |
+           +------------------+
+           |    PAGAMENTO     |
+           +------------------+
+           | PK id_pagamento  |
+           | FK id_reserva    |
+           | valor            |
+           | data_pagamento   |
+           | metodo           |
+           | status           |
+           +------------------+
+
+        RELAÇÃO N:N
+
++--------------------------+
+|    RESERVA_SERVICO       |
++--------------------------+
+| PK id_reserva_servico    |
+| FK id_reserva            |
+| FK id_servico            |
+| quantidade               |
+| valor_contratado         |
++--------------------------+
+       ^               ^
+       |               |
+     (N:1)           (N:1)
+       |               |
+  RESERVA          SERVICO
+
+
+                 +----------------------+
+                 |     AVALIACAO        |
+                 +----------------------+
+                 | PK id_avaliacao      |
+                 | FK id_cliente        |
+                 | FK id_local (opcional)|
+                 | FK id_servico(opcional)|
+                 | nota                 |
+                 | comentario           |
+                 | data_avaliacao       |
+                 +----------------------+
+
+CLIENTE (1:N) -------- AVALIACAO
+LOCAL    (1:N) -------- AVALIACAO
+SERVICO  (1:N) -------- AVALIACAO
+
+
+               +----------------------+
+               |    NOTIFICACAO       |
+               +----------------------+
+               | PK id_notificacao    |
+               | FK id_usuario        |
+               | mensagem             |
+               | data_envio           |
+               | visualizada          |
+               +----------------------+
+
+USUARIO (1:N) -------- NOTIFICACAO
