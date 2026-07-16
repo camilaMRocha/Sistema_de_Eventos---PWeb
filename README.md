@@ -40,5 +40,7 @@
   | RNF08 |	O código deve seguir boas práticas de organização para facilitar manutenção futura. |
 
   * Identificar os principais usuários (atores) do sistema – Cliente, Fornecedor e Administrador
+ 
+  * Link do Figma para visualizar o protótipo: https://www.figma.com/design/dE4rMIj3fzbXqDITzMmSbM/Sem-t%C3%ADtulo?node-id=0-1&t=4eweeq9jkEhgGBJP-1
 
   
