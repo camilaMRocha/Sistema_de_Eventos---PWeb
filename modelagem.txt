@@ -78,6 +78,41 @@
     - id_servico (FK) -> Servico
 
 ------------------------------------------------------------------------
+3.1. RESTRIÇÕES DE INTEGRIDADE (UNIQUE E CHECK)
+------------------------------------------------------------------------
+* Usuario
+    - UNIQUE (email)
+
+* Cliente
+    - UNIQUE (cpf)
+
+* Fornecedor
+    - UNIQUE (cnpj)
+
+* Local
+    - CHECK (capacidade > 0)
+    - CHECK (preco_diaria >= 0)
+
+* Servico
+    - CHECK (preco >= 0)
+
+* Evento
+    - CHECK (orcamento_estimado >= 0)
+
+* Reserva
+    - CHECK (valor_total >= 0)
+
+* Pagamento
+    - CHECK (valor > 0)
+
+* Avaliacao
+    - CHECK (nota >= 1 AND nota <= 5)
+
+* Reserva_Servico
+    - CHECK (quantidade > 0)
+    - CHECK (valor_contratado >= 0)
+
+------------------------------------------------------------------------
 4. RELACIONAMENTOS
 ------------------------------------------------------------------------
 * Usuario possui Cliente
@@ -135,7 +170,7 @@
 * RN02 - Vínculo de Conta: Um cliente ou fornecedor só pode ser cadastrado no sistema se estiver associado a um usuário de login previamente ativo.
 * RN03 - Orçamento Dinâmico: O orçamento estimado de um evento deve ser a soma exata de todos os serviços e locais adicionados ao pacote daquele evento.
 * RN04 - Conflito de Agenda (Disponibilidade): Um local ou serviço de fornecedor não pode ser reservado para mais de um evento na mesma data.
-* RN05 - Status de Reserva: Toda nova reserva deve iniciar com o status "Pendente" e só mudar para "Confirmado" após o registro do pagamento correspondente.
+* RN05 - Status de Reserva: Toda nova reserva deve iniciar com o status "Pendente" and só mudar para "Confirmado" após o registro do pagamento correspondente.
 * RN06 - Histórico de Pagamentos: O valor total registrado em pagamentos não pode ultrapassar o valor total acordado na reserva.
 * RN07 - Avaliação Pós-Evento: Um cliente só pode avaliar e comentar sobre um local ou serviço se a data do evento correspondente já tiver passado e a reserva estiver com status "Concluído".
 * RN08 - Regra de Cancelamento: O cancelamento de uma reserva altera o status da reserva para "Cancelado" e libera automaticamente as datas do local e dos serviços associados para novas buscas.
@@ -182,4 +217,3 @@
     que dependem de registros de outras tabelas (Servico, Local, Reserva_Servico).
     Essa exceção é aceitável por ser uma decisão consciente de projeto,
     sustentada pela RN03, e não um erro de levantamento de atributos.
-
