@@ -1,0 +1,75 @@
+MODELAGEM DAS CLASSES (HEYEVENTS)
+
+1. OBJETIVO DO PROJETO
+
+O HeyEvents é uma plataforma centralizada projetada para conectar clientes a locais e fornecedores de eventos. O sistema permite pesquisar serviços, simular orçamentos, realizar reservas e gerenciar todo o planejamento de eventos como casamentos, aniversários e confraternizações.
+
+
+2. ESTRUTURA DE CLASSES
+
+2.1. ESTRUTURA DE USUÁRIOS (HERANÇA)
+Para otimizar o reaproveitamento de código referente à gestão de contas e acessos, foi criada uma superclasse genérica que compartilha seus atributos com as classes especializadas.
+
+- Classe Usuario (Superclasse / Classe Pai)
+  - Finalidade: Gerenciar credenciais e dados gerais de acesso à plataforma.
+  - Atributos: id_usuario (int, público), email (string, público), senha (string, privado), data_cadastro (date, público).
+  - Métodos: fazer_login(), alterar_senha().
+
+- Classe Cliente (Subclasse / Classe Filha)
+  - Finalidade: Representa o usuário final que contrata serviços e planeja eventos. Herda os atributos e métodos de Usuario.
+  - Atributos próprios: id_cliente (int, público), nome (string, público), cpf (string, público), telefone (string, público).
+  - Métodos próprios: criar_evento(), solicitar_reserva(), fazer_avaliacao().
+
+- Classe Fornecedor (Subclasse / Classe Filha)
+  - Finalidade: Representa os parceiros comerciais que ofertam locais e serviços. Herda os atributos e métodos de Usuario.
+  - Atributos próprios: id_fornecedor (int, público), nome_fornecedor (string, público), cnpj (string, público), telefone (string, público), categoria (string, público).
+  - Métodos próprios: cadastrar_servico(), cadastrar_local().
+
+
+2.2. GESTÃO DE EVENTOS E OPERAÇÕES (ENCAPSULAMENTO)
+O encapsulamento garante a segurança dos dados e o cumprimento rigoroso das regras de negócio, protegendo atributos sensíveis contra alterações diretas externas.
+
+- Classe Evento
+  - Atributos: id_evento (int, público), id_cliente (int, público), nome_evento (string, público), tipo_evento (string, público), data_evento (date, público), orcamento_estimado (float, privado).
+  - Métodos: adicionar_item(), calcular_orcamento_total().
+  - Encapsulamento aplicado: O atributo orcamento_estimado é privado. O valor não pode ser modificado manualmente, sendo recalculado pelo método calcular_orcamento_total() que soma os itens vinculados.
+
+- Classe Reserva
+  - Atributos: id_reserva (int, público), id_evento (int, público), id_local (int, público), status_reserva (string, público), data_reserva (date, público), valor_total (float, público).
+  - Métodos: confirmar_reserva(), cancelar_reserva().
+  - Regra de Negócio: O status inicia como "Pendente" e transita para "Confirmado" apenas mediante processamento de pagamento.
+
+- Classe Pagamento
+  - Atributos: id_pagamento (int, público), id_reserva (int, público), valor (float, público), data_pagamento (date, público), metodo_pagamento (string, público), status_pagamento (string, público).
+  - Métodos: processar_pagamento(), validar_limite_valor().
+  - Regra de Negócio: Valida se o total pago não excede o valor da reserva.
+
+- Classe Avaliacao
+  - Atributos: id_avaliacao (int, público), id_cliente (int, público), id_local (int, público), id_servico (int, público), nota (int, privado), comentario (string, público), data_avaliacao (date, público).
+  - Métodos: registrar_avaliacao(), validar_alvo().
+  - Encapsulamento aplicado: O atributo nota é privado, aceitando apenas valores de 1 a 5 via validação no método.
+
+
+2.3. CATÁLOGO DE OFERTAS (POLIMORFISMO)
+O polimorfismo é utilizado para padronizar chamadas de verificação de disponibilidade em diferentes itens contratáveis do sistema.
+
+- Classe Local
+  - Atributos: id_local (int, público), nome (string, público), endereco (string, público), capacidade (int, público), preco_diaria (float, público), descricao (string, público).
+  - Métodos: verificar_disponibilidade(data), calcular_diaria().
+
+- Classe Servico
+  - Atributos: id_servico (int, público), id_fornecedor (int, público), nome (string, público), categoria (string, público), preco (float, público), descricao (string, público).
+  - Métodos: verificar_disponibilidade(data), calcular_preco().
+
+- Aplicação de Polimorfismo: As classes Local e Servico implementam o método verificar_disponibilidade(data). Cada classe executa a busca de disponibilidade em sua própria estrutura de agendamento (agenda de espaços físicos versus agenda de fornecedores), permitindo uma interface de busca unificada para a aplicação.
+
+
+2.4. CLASSES COMPLEMENTARES
+
+- Classe Notificacao
+  - Atributos: id_notificacao (int, público), id_usuario (int, público), mensagem (string, público), data_envio (datetime, público), visualizada (bool, público).
+  - Métodos: enviar_notificacao(), marcar_como_lida().
+
+- Classe ReservaServico (Entidade Associativa)
+  - Atributos: id_reserva_servico (int, público), id_reserva (int, público), id_servico (int, público), quantidade (int, público), valor_contratado (float, público).
+  - Métodos: calcular_subtotal().
