@@ -1,0 +1,71 @@
+
+1. ESTRUTURA DE USUÁRIOS (HERANÇA)
+
+- Classe Usuario (Classe Pai)
+  - Finalidade: Representa a conta genérica de acesso ao sistema.
+  - Atributos principais: id_usuario, email, senha, data_cadastro
+  - Métodos principais: fazer_login(), alterar_senha()
+
+- Classe Cliente (Classe Filha)
+  - Finalidade: Representa o usuário que busca e contrata serviços e locais para seus eventos. Herda todos os dados da classe Usuario.
+  - Atributos próprios: id_cliente, nome, cpf, telefone
+  - Métodos principais: criar_evento(), solicitar_reserva(), fazer_avaliacao()
+
+- Classe Fornecedor (Classe Filha)
+  - Finalidade: Representa os parceiros comerciais que oferecem locais ou serviços na plataforma. Herda todos os dados da classe Usuario.
+  - Atributos próprios: id_fornecedor, nome_fornecedor, cnpj, telefone, categoria
+  - Métodos principais: cadastrar_servico(), cadastrar_local()
+
+
+2. GESTÃO DE EVENTOS E OPERAÇÕES (ENCAPSULAMENTO)
+
+- Classe Evento
+  - Finalidade: Gerenciar o planejamento do evento do cliente.
+  - Atributos principais: id_evento, id_cliente, nome_evento, tipo_evento, data_evento, orcamento_estimado (privado)
+  - Métodos principais: adicionar_item(), calcular_orcamento_total()
+  - Regra aplicada: O orçamento estimado não pode ser alterado manualmente. O método calcular_orcamento_total() realiza a soma dos locais e serviços vinculados.
+
+- Classe Reserva
+  - Finalidade: Controlar as reservas realizadas para um evento.
+  - Atributos principais: id_reserva, id_evento, id_local, status_reserva, data_reserva, valor_total
+  - Métodos principais: confirmar_reserva(), cancelar_reserva()
+  - Regra aplicada: O status da reserva inicia como Pendente e só é alterado para Confirmado mediante validação do pagamento. O cancelamento altera o status e libera as datas vinculadas.
+
+- Classe Pagamento
+  - Finalidade: Registrar e validar as transações financeiras referentes às reservas.
+  - Atributos principais: id_pagamento, id_reserva, valor, data_pagamento, metodo_pagamento, status_pagamento
+  - Métodos principais: processar_pagamento(), validar_limite_valor()
+  - Regra aplicada: O valor pago é validado para garantir que não ultrapasse o valor total da reserva contratada.
+
+- Classe Avaliacao
+  - Finalidade: Armazenar a opinião do cliente sobre um local ou serviço contratado.
+  - Atributos principais: id_avaliacao, id_cliente, id_local, id_servico, nota (privada), comentario, data_avaliacao
+  - Métodos principais: registrar_avaliacao(), validar_alvo()
+  - Regra aplicada: A nota é privada e só aceita valores entre 1 e 5. O método garante que a avaliação seja vinculada a um local ou a um serviço, nunca a ambos ao mesmo tempo.
+
+
+3. CATÁLOGO DE OFERTAS (POLIMORFISMO)
+
+- Classe Local
+  - Finalidade: Representar os espaços físicos disponíveis para aluguel.
+  - Atributos principais: id_local, nome, endereco, capacidade, preco_diaria, descricao
+  - Métodos principais: verificar_disponibilidade(data), calcular_diaria()
+
+- Classe Servico
+  - Finalidade: Representar os serviços individuais oferecidos pelos fornecedores.
+  - Atributos principais: id_servico, id_fornecedor, nome, categoria, preco, descricao
+  - Métodos principais: verificar_disponibilidade(data), calcular_preco()
+  - Aplicação de Polimorfismo: As classes Local e Servico possuem o método verificar_disponibilidade(data), executando a verificação em suas respectivas agendas para evitar reservas duplicadas na mesma data.
+
+
+4. CLASSES COMPLEMENTARES
+
+- Classe Notificacao
+  - Finalidade: Enviar mensagens de alerta e atualizações de status para os usuários.
+  - Atributos principais: id_notificacao, id_usuario, mensagem, data_envio, visualizada
+  - Métodos principais: enviar_notificacao(), marcar_como_lida()
+
+- Classe ReservaServico (Associativa)
+  - Finalidade: Gerenciar a contratação de múltiplos serviços dentro de uma mesma reserva.
+  - Atributos principais: id_reserva_servico, id_reserva, id_servico, quantidade, valor_contratado
+  - Métodos principais: calcular_subtotal()
