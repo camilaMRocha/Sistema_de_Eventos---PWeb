@@ -324,6 +324,10 @@ Da mesma forma, um serviço pode participar de diversas reservas.
 
 Esse relacionamento é implementado pela entidade associativa **ReservaServico**, responsável por armazenar informações como quantidade contratada e valor negociado.
 
+## Administrador (1) : (N) Palavra_Proibida
+
+Um administrador pode cadastrar diversas palavras proibidas, mas cada palavra é registrada por um único administrador
+
 ---
 
 # Aplicação dos Conceitos de Programação Orientada a Objetos
