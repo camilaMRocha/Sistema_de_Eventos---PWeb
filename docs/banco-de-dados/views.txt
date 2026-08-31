@@ -1,0 +1,227 @@
+PARTE 1 — VIEWS SIMPLES
+
+ 1.1 Eventos públicos — alimenta diretamente a tela de busca (quem NÃO é dono do evento só pode enxergar isso). É a personalização "público ou não" virando regra de acesso, não só um campo exibido.
+
+CREATE VIEW vw_eventos_publicos AS
+SELECT id_evento, nome_evento, formato, data_hora_inicio, data_hora_termino,
+       descricao_evento, id_categoria, id_cliente
+FROM evento
+WHERE visibilidade = 'Publico';
+
+1.2 Notificações pendentes — alimenta o sininho com contador na topbar.
+CREATE VIEW vw_notificacoes_pendentes AS
+SELECT id_notificacao, id_usuario, mensagem, data_envio
+FROM notificacao
+WHERE visualizada = FALSE;
+
+ 1.3 Categoria com o nome do pai já resolvido — evita repetir esse JOIN em todo lugar que precisa mostrar "Social > Casamento".
+CREATE VIEW vw_categoria_hierarquia AS
+SELECT c.id_categoria,
+       c.nome_categoria      AS subcategoria,
+       p.id_categoria        AS id_categoria_pai,
+       p.nome_categoria      AS tipo_evento
+FROM categoria c
+LEFT JOIN categoria p ON c.id_categoria_pai = p.id_categoria;
+
+1.4 Funcionários com o nome da empresa já resolvido.
+CREATE VIEW vw_funcionarios_fornecedor AS
+SELECT f.id_funcionario, f.nome_completo, f.funcao_exercida, f.telefone,
+       fo.id_fornecedor, fo.nome_fornecedor
+FROM funcionario f
+JOIN fornecedor fo ON f.id_fornecedor = fo.id_fornecedor;
+
+1.5 Ingressos dentro da janela de vendas — usado pra decidir se o botão "comprar" aparece habilitado ou não.
+CREATE VIEW vw_ingressos_em_venda AS
+SELECT id_ingresso, id_evento, titulo_ingresso, tipo_ingresso, preco
+FROM ingresso
+WHERE NOW() BETWEEN data_hora_inicio_vendas AND data_hora_termino_vendas;
+
+1.6 Eventos com nome da categoria já resolvido. OBSERVAÇÃO: esta view NÃO filtra visibilidade. 
+CREATE VIEW vw_eventos AS
+SELECT e.id_evento, e.nome_evento, e.id_cliente, c.nome_categoria,
+       e.formato, e.visibilidade, e.data_hora_inicio, e.data_hora_termino,
+       e.orcamento_estimado
+FROM evento e
+JOIN categoria c ON e.id_categoria = c.id_categoria;
+
+1.7 Locais com endereço já concatenado — evita montar a string em todo lugar que precisa exibir o endereço.
+CREATE VIEW vw_locais AS
+SELECT id_local, id_fornecedor, nome,
+       CONCAT(rua, ', ', numero, ' - ', cidade, '/', estado) AS endereco,
+       capacidade, preco_diaria
+FROM local;
+
+1.8 Fornecedores com o e-mail de login já resolvido — útil pra busca e pra qualquer tela de contato.
+CREATE VIEW vw_fornecedores AS
+SELECT f.id_fornecedor, f.nome_fornecedor, u.email, f.telefone,
+       f.cidade, f.estado, f.categoria_atuacao
+FROM fornecedor f
+JOIN usuario u ON f.id_usuario = u.id_usuario;
+
+1.9 Serviços com o nome do fornecedor (e do funcionário responsável, quando houver) — ideal pra tela de contratação de serviço.
+CREATE VIEW vw_servicos AS
+SELECT s.id_servico, s.nome, s.categoria, s.preco,
+       f.nome_fornecedor,
+       fu.nome_completo AS funcionario_responsavel
+FROM servico s
+JOIN fornecedor f ON s.id_fornecedor = f.id_fornecedor
+LEFT JOIN funcionario fu ON s.id_funcionario = fu.id_funcionario;
+
+1.10 Ingressos com o nome do evento já resolvido — variante "leve" de vw_disponibilidade_ingresso (item 2.3), sem o cálculo de estoque.
+CREATE VIEW vw_ingressos AS
+SELECT i.id_ingresso, e.nome_evento, i.titulo_ingresso, i.tipo_ingresso,
+       i.preco, i.quantidade_total
+FROM ingresso i
+JOIN evento e ON i.id_evento = e.id_evento;
+
+ PARTE 2 — VIEWS COMPLEXAS
+
+ 2.1 Nota média por Local — base para o selo "4+" no card do local.
+CREATE VIEW vw_avaliacao_media_local AS
+SELECT id_local, ROUND(AVG(nota), 1) AS nota_media, COUNT(*) AS total_avaliacoes
+FROM avaliacao
+WHERE id_local IS NOT NULL
+GROUP BY id_local;
+
+2.2 Nota média por Serviço — mesma lógica, outro alvo.
+CREATE VIEW vw_avaliacao_media_servico AS
+SELECT id_servico, ROUND(AVG(nota), 1) AS nota_media, COUNT(*) AS total_avaliacoes
+FROM avaliacao
+WHERE id_servico IS NOT NULL
+GROUP BY id_servico;
+
+2.3 Disponibilidade de Ingresso — quantidade vendida, quantidade que ainda pode ser vendida e status (Esgotado/Disponível). Essencial pra "personalizar o ingresso" não vender além do que existe (RN10).
+CREATE VIEW vw_disponibilidade_ingresso AS
+SELECT i.id_ingresso, i.id_evento, i.titulo_ingresso, i.tipo_ingresso,
+       i.quantidade_total,
+       COALESCE(SUM(v.quantidade), 0) AS quantidade_vendida,
+       i.quantidade_total - COALESCE(SUM(v.quantidade), 0) AS quantidade_disponivel,
+       CASE
+           WHEN i.quantidade_total - COALESCE(SUM(v.quantidade), 0) <= 0 THEN 'Esgotado'
+           ELSE 'Disponivel'
+       END AS status_estoque
+FROM ingresso i
+LEFT JOIN ingresso_venda v ON v.id_ingresso = i.id_ingresso
+GROUP BY i.id_ingresso;
+
+2.4 Card completo do Local — junta dono, contato, nota média e todasas categorias (tags) num só SELECT. É literalmente o card do protótipo (foto + descrição + valor + contato + tags) pronto.
+CREATE VIEW vw_local_cartao AS
+SELECT l.id_local, l.nome, l.descricao, l.preco_diaria, l.cidade, l.estado,
+       l.quartos, l.banheiros, l.vagas_estacionamento, l.metragem,
+       fo.nome_fornecedor              AS proprietario,
+       fo.telefone                     AS contato_proprietario,
+       COALESCE(am.nota_media, 0)      AS nota_media,
+       COALESCE(am.total_avaliacoes,0) AS total_avaliacoes,
+       STRING_AGG(DISTINCT cat.nome_categoria, ', ') AS categorias
+FROM local l
+JOIN fornecedor fo ON l.id_fornecedor = fo.id_fornecedor
+LEFT JOIN vw_avaliacao_media_local am ON am.id_local = l.id_local
+LEFT JOIN local_categoria lc ON lc.id_local = l.id_local
+LEFT JOIN categoria cat ON cat.id_categoria = lc.id_categoria
+GROUP BY l.id_local, fo.nome_fornecedor, fo.telefone, am.nota_media, am.total_avaliacoes;
+
+2.5 Calendário de ocupação do Local — datas já reservadas (o calendário com dias riscados na tela do local).
+CREATE VIEW vw_calendario_local AS
+SELECT r.id_local, r.id_reserva, r.data_hora_inicio, r.data_hora_fim, r.status_reserva
+FROM reserva r
+WHERE r.status_reserva IN ('Confirmado', 'Concluido');
+
+2.6 Busca de eventos públicos — a tela de "Resultados encontrados". Já resolve tipo/subcategoria, organizador e o local (quando já definido), pronta pra filtrar por data/categoria/cidade.
+CREATE VIEW vw_busca_eventos AS
+SELECT e.id_evento, e.nome_evento, e.formato,
+       e.data_hora_inicio, e.data_hora_termino,
+       cat.nome_categoria    AS subcategoria,
+       catpai.nome_categoria AS tipo_evento,
+       cl.nome               AS organizador,
+       l.nome                AS nome_local,
+       l.cidade, l.estado, l.preco_diaria
+FROM evento e
+JOIN categoria cat ON e.id_categoria = cat.id_categoria
+LEFT JOIN categoria catpai ON cat.id_categoria_pai = catpai.id_categoria
+JOIN cliente cl ON e.id_cliente = cl.id_cliente
+LEFT JOIN reserva r ON r.id_evento = e.id_evento AND r.status_reserva <> 'Cancelado'
+LEFT JOIN local l ON r.id_local = l.id_local
+WHERE e.visibilidade = 'Publico';
+
+2.7 Financeiro do Evento — orçamento vs. total recebido, base pra validar a RN06 (pagamentos não podem ultrapassar o valor acordado) e pra um painel de acompanhamento do cliente/administrador.
+CREATE VIEW vw_financeiro_evento AS
+SELECT e.id_evento, e.nome_evento, e.orcamento_estimado,
+       COALESCE(SUM(p.valor) FILTER (WHERE p.status_pagamento = 'Aprovado'), 0) AS total_recebido,
+       e.orcamento_estimado
+           - COALESCE(SUM(p.valor) FILTER (WHERE p.status_pagamento = 'Aprovado'), 0) AS saldo_pendente
+FROM evento e
+LEFT JOIN reserva r ON r.id_evento = e.id_evento
+LEFT JOIN pagamento p ON p.id_reserva = r.id_reserva
+GROUP BY e.id_evento, e.orcamento_estimado;
+
+2.8 Reserva completa — resumo de uma reserva com serviços contratados e total já pago. Ideal pra tela de "editar/cancelar reserva", porque mostra de uma vez tudo que seria afetado por uma exclusão.
+CREATE VIEW vw_reserva_completa AS
+SELECT r.id_reserva, r.status_reserva, r.data_hora_inicio, r.data_hora_fim, r.valor_total,
+       ev.nome_evento, l.nome AS nome_local,
+       COALESCE(SUM(rs.valor_contratado * rs.quantidade), 0) AS total_servicos_contratados,
+       COALESCE(SUM(pg.valor) FILTER (WHERE pg.status_pagamento = 'Aprovado'), 0) AS total_pago
+FROM reserva r
+JOIN evento ev ON r.id_evento = ev.id_evento
+JOIN local l ON r.id_local = l.id_local
+LEFT JOIN reserva_servico rs ON rs.id_reserva = r.id_reserva
+LEFT JOIN pagamento pg ON pg.id_reserva = r.id_reserva
+GROUP BY r.id_reserva, ev.nome_evento, l.nome;
+
+2.9 Dashboard do Organizador — painel principal do evento: cliente, categoria, local(is) reservado(s), ingressos vendidos e faturamento.
+CREATE VIEW vw_dashboard_eventos AS
+WITH vendas_evento AS (
+    SELECT i.id_evento,
+           COUNT(iv.id_venda)              AS ingressos_vendidos,
+           COALESCE(SUM(iv.valor_total), 0) AS faturamento_ingressos
+    FROM ingresso i
+    LEFT JOIN ingresso_venda iv ON iv.id_ingresso = i.id_ingresso
+    GROUP BY i.id_evento
+),
+local_evento AS (
+    SELECT r.id_evento,
+           STRING_AGG(DISTINCT l.nome, ', ') AS locais_reservados
+    FROM reserva r
+    JOIN local l ON l.id_local = r.id_local
+    WHERE r.status_reserva <> 'Cancelado'
+    GROUP BY r.id_evento
+)
+SELECT
+    e.id_evento,
+    e.nome_evento,
+    c.nome           AS cliente,
+    cat.nome_categoria,
+    le.locais_reservados,
+    COALESCE(ve.ingressos_vendidos, 0)     AS ingressos_vendidos,
+    COALESCE(ve.faturamento_ingressos, 0)  AS faturamento_ingressos
+FROM evento e
+JOIN cliente c ON e.id_cliente = c.id_cliente
+JOIN categoria cat ON e.id_categoria = cat.id_categoria
+LEFT JOIN vendas_evento ve ON ve.id_evento = e.id_evento
+LEFT JOIN local_evento le ON le.id_evento = e.id_evento;
+
+2.10 Receita do Fornecedor — soma o que ele recebe alugando local E o que recebe prestando serviço, porque um fornecedor pode fazer só uma das duas coisas (regra do seu próprio sistema).
+CREATE VIEW vw_receita_fornecedor AS
+WITH receita_servicos AS (
+    SELECT s.id_fornecedor,
+           SUM(rs.valor_contratado * rs.quantidade) AS receita_servicos
+    FROM servico s
+    JOIN reserva_servico rs ON rs.id_servico = s.id_servico
+    GROUP BY s.id_fornecedor
+),
+receita_locais AS (
+    SELECT l.id_fornecedor,
+           SUM(r.valor_total) AS receita_locais
+    FROM local l
+    JOIN reserva r ON r.id_local = l.id_local
+    WHERE r.status_reserva <> 'Cancelado'
+    GROUP BY l.id_fornecedor
+)
+SELECT
+    f.id_fornecedor,
+    f.nome_fornecedor,
+    COALESCE(rl.receita_locais, 0)   AS receita_locais,
+    COALESCE(rs.receita_servicos, 0) AS receita_servicos,
+    COALESCE(rl.receita_locais, 0) + COALESCE(rs.receita_servicos, 0) AS receita_total
+FROM fornecedor f
+LEFT JOIN receita_locais   rl ON rl.id_fornecedor = f.id_fornecedor
+LEFT JOIN receita_servicos rs ON rs.id_fornecedor = f.id_fornecedor;
