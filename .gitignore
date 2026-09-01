@@ -1,4 +1,4 @@
-﻿# Python
+# Python
 __pycache__/
 *.py[cod]
 *.class
@@ -41,3 +41,6 @@ venv/
 *.log
 .DS_Store
 Thumbs.db
+
+# Arquivos locais / temporários
+projeto.txt
