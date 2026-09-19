@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HeyEvents - Reserva de Espaço</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/frontend/css/estilo.css">
+    <style>
+        .top-wave-banner {
+            height: 100px;
+            background: linear-gradient(135deg, #d94848 0%, #e59b2c 35%, #008282 70%, #ea8394 100%);
+            width: 100%;
+        }
+
+        .logo-circle-mini {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background-color: #000000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-inner-mini {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background-color: #f59e0b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000000;
+            font-size: 0.45rem;
+            font-weight: 800;
+            text-align: center;
+            line-height: 1;
+        }
+
+        .nav-link-custom {
+            color: #1e293b;
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 0.95rem;
+        }
+
+        .nav-link-custom.active {
+            border-bottom: 2px solid #008282;
+            color: #008282;
+        }
+
+        .local-detail-card {
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+            padding: 30px;
+            margin-top: -30px;
+            position: relative;
+        }
+
+        .local-title-underlined {
+            font-weight: 700;
+            display: inline-block;
+            border-bottom: 3px solid #64748b;
+            padding-bottom: 4px;
+            color: #1e293b;
+            font-size: 1.6rem;
+            margin-bottom: 12px;
+        }
+
+        .local-main-image {
+            width: 100%;
+            height: 260px;
+            object-fit: cover;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #008282 0%, #1e293b 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 1.2rem;
+            text-align: center;
+            padding: 15px;
+        }
+
+        .amenity-badge {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 8px 14px;
+            display: inline-flex;
+            align-items: center;
+            font-weight: 600;
+            color: #334155;
+            font-size: 0.9rem;
+        }
+
+        .card-reserva-box {
+            background-color: #f8fafc;
+            border: 2px solid #008282;
+            border-radius: 18px;
+            padding: 24px;
+        }
+
+        .btn-teal {
+            background-color: #008282;
+            color: #ffffff;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 25px;
+            width: 100%;
+            transition: background-color 0.2s;
+            font-size: 1.05rem;
+        }
+
+        .btn-teal:hover {
+            background-color: #006666;
+            color: #ffffff;
+        }
+
+        .comentario-box {
+            border: 2px solid #f59e0b;
+            border-radius: 20px;
+            padding: 14px 20px;
+            background-color: #ffffff;
+            margin-bottom: 14px;
+        }
+
+        .avatar-circle {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background-color: #cbd5e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #475569;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Navbar Superior -->
+    <nav class="navbar navbar-expand-lg bg-white border-bottom shadow-sm">
+        <div class="container">
+            <div class="d-flex align-items-center gap-3">
+                <a href="/" class="d-flex align-items-center text-decoration-none">
+                    <div class="logo-circle-mini">
+                        <div class="logo-inner-mini">Hey Event</div>
+                    </div>
+                </a>
+                <div class="d-flex align-items-center gap-3 ms-2">
+                    <a href="/meus-eventos" class="nav-link-custom">Meus eventos</a>
+                    <span class="text-muted">|</span>
+                    <a href="/" class="nav-link-custom">Home</a>
+                </div>
+            </div>
+
+            <div id="areaPerfil" class="d-flex align-items-center gap-2">
+                <span id="nomeUsuario" class="small fw-semibold text-secondary">Olá, visitante</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Faixa colorida -->
+    <div class="top-wave-banner"></div>
+
+    <main class="container mb-5">
+        <div id="mensagemAlerta" class="mt-3"></div>
+
+        <div class="local-detail-card" id="painelDetalhesLocal">
+            <div class="row g-4">
+                <!-- Coluna da Esquerda: Fotos e Caracteristicas -->
+                <div class="col-lg-4">
+                    <div id="containerImagemLocal">
+                        <div class="local-main-image" id="imagemLocal">
+                            <span>Carregando dados do espaço...</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 d-flex flex-wrap gap-2" id="amenidadesLocal">
+                        <!-- Quartos, Banheiros, Vagas, Metragem preenchidos dinamicamente -->
+                    </div>
+
+                    <div class="mt-3">
+                        <span class="fw-semibold text-secondary small d-block mb-1">Categorias atendidas:</span>
+                        <div id="badgesCategorias" class="d-flex flex-wrap gap-1">
+                            <!-- Badges preenchidas dinamicamente -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coluna Central: Dados do Local -->
+                <div class="col-lg-4">
+                    <h2 class="local-title-underlined" id="nomeLocal">Nome do Espaço</h2>
+                    <p class="text-secondary" id="descricaoLocal">Descrição completa do local.</p>
+
+                    <div class="mb-3">
+                        <span class="text-muted small d-block">Valor da diária:</span>
+                        <span class="fs-4 fw-bold text-success" id="diariaLocal">R$ 0,00</span>
+                    </div>
+
+                    <div class="mb-3">
+                        <span class="text-muted small d-block">Localização:</span>
+                        <span class="fw-medium text-dark" id="enderecoLocal">Endereço do local</span>
+                    </div>
+
+                    <div class="mb-3">
+                        <span class="text-muted small d-block">Proprietário responsável:</span>
+                        <span class="fw-medium text-dark" id="proprietarioLocal">Nome do fornecedor</span>
+                        <span class="text-muted small d-block" id="contatoLocal">Contato: (00) 0000-0000</span>
+                    </div>
+
+                    <!-- Calendario de Ocupacao -->
+                    <div class="mt-4 pt-3 border-top">
+                        <h6 class="fw-bold text-dark mb-2">Disponibilidade e Reservas Existentes:</h6>
+                        <div id="listaOcupacao" class="small text-muted">
+                            Consultando agenda do espaço...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coluna da Direita: Card de Reserva -->
+                <div class="col-lg-4">
+                    <div class="card-reserva-box shadow-sm">
+                        <h4 class="fw-bold text-dark mb-3">Reservar este Espaço</h4>
+
+                        <div id="alertaReserva" aria-live="polite"></div>
+
+                        <form id="formReserva" novalidate>
+                            <div class="mb-3">
+                                <label for="selectEvento" class="form-label fw-semibold text-secondary small">Vincular a qual dos seus eventos? *</label>
+                                <select class="form-select" id="selectEvento" required>
+                                    <option value="">Carregando seus eventos...</option>
+                                </select>
+                                <div class="mt-1">
+                                    <a href="/cadastro-de-evento" class="small text-decoration-none">+ Criar um novo evento primeiro</a>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <span class="form-label fw-semibold text-secondary small d-block mb-1">Início da reserva *</span>
+                                <div class="row g-2">
+                                    <div class="col-7">
+                                        <label for="dataInicioReserva" class="form-label small text-muted mb-1">Data de início</label>
+                                        <input type="date" class="form-control" id="dataInicioReserva" required>
+                                    </div>
+                                    <div class="col-5">
+                                        <label for="horaInicioReserva" class="form-label small text-muted mb-1">Horário</label>
+                                        <input type="time" class="form-control" id="horaInicioReserva" value="08:00" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <span class="form-label fw-semibold text-secondary small d-block mb-1">Término da reserva *</span>
+                                <div class="row g-2">
+                                    <div class="col-7">
+                                        <label for="dataFimReserva" class="form-label small text-muted mb-1">Data de término</label>
+                                        <input type="date" class="form-control" id="dataFimReserva" required>
+                                    </div>
+                                    <div class="col-5">
+                                        <label for="horaFimReserva" class="form-label small text-muted mb-1">Horário</label>
+                                        <input type="time" class="form-control" id="horaFimReserva" value="22:00" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="p-3 bg-white rounded border mb-3">
+                                <div class="d-flex justify-content-between small text-muted mb-1">
+                                    <span id="calculoDiasTexto">1 diária</span>
+                                    <span id="calculoPrecoUnitario">R$ 0,00</span>
+                                </div>
+                                <hr class="my-1">
+                                <div class="d-flex justify-content-between fw-bold text-dark fs-5">
+                                    <span>Total Estimado:</span>
+                                    <span class="text-success" id="valorTotalReserva">R$ 0,00</span>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-teal" id="btnConfirmarReserva">Confirmar Reserva</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/frontend/js/reserva.js"></script>
+</body>
+</html>

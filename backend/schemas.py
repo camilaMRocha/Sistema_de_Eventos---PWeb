@@ -216,6 +216,7 @@ class LocalCardResponse(BaseModel):
     nome: str
     descricao: Optional[str] = None
     preco_diaria: float
+    capacidade: Optional[int] = 0
     cidade: str
     estado: str
     quartos: Optional[int] = 0
@@ -227,3 +228,91 @@ class LocalCardResponse(BaseModel):
     nota_media: float
     total_avaliacoes: int
     categorias: Optional[str] = None
+
+class LocalUpdate(BaseModel):
+    id_fornecedor: Optional[int] = None
+    nome: Optional[str] = None
+    rua: Optional[str] = None
+    numero: Optional[str] = None
+    bairro: Optional[str] = None
+    cidade: Optional[str] = None
+    estado: Optional[str] = None
+    cep: Optional[str] = None
+    complemento: Optional[str] = None
+    capacidade: Optional[int] = None
+    preco_diaria: Optional[float] = None
+    metragem: Optional[float] = None
+    descricao: Optional[str] = None
+    quartos: Optional[int] = None
+    banheiros: Optional[int] = None
+    vagas_estacionamento: Optional[int] = None
+    categorias_ids: Optional[List[int]] = None
+    fotos_urls: Optional[List[str]] = None
+
+
+class EventoCreate(BaseModel):
+    id_cliente: int
+    id_categoria: int
+    nome_evento: str
+    formato: Optional[str] = "Presencial"
+    visibilidade: Optional[str] = "Privado"
+    data_hora_inicio: datetime
+    data_hora_termino: datetime
+    descricao_evento: Optional[str] = None
+    orcamento_estimado: Optional[float] = 0.0
+    fotos_urls: Optional[List[str]] = None
+
+class EventoUpdate(BaseModel):
+    nome_evento: Optional[str] = None
+    id_categoria: Optional[int] = None
+    formato: Optional[str] = None
+    visibilidade: Optional[str] = None
+    data_hora_inicio: Optional[datetime] = None
+    data_hora_termino: Optional[datetime] = None
+    descricao_evento: Optional[str] = None
+    orcamento_estimado: Optional[float] = None
+    fotos_urls: Optional[List[str]] = None
+
+class EventoResponse(BaseModel):
+    id_evento: int
+    id_cliente: int
+    id_categoria: int
+    nome_categoria: Optional[str] = None
+    tipo_evento: Optional[str] = None
+    nome_evento: str
+    formato: str
+    visibilidade: str
+    data_hora_inicio: datetime
+    data_hora_termino: datetime
+    descricao_evento: Optional[str] = None
+    orcamento_estimado: Optional[float] = 0.0
+    fotos_urls: Optional[List[str]] = None
+    local_reservado: Optional[str] = None
+    status_reserva: Optional[str] = None
+
+class ReservaCreate(BaseModel):
+    id_evento: int
+    id_local: int
+    data_hora_inicio: datetime
+    data_hora_fim: datetime
+    valor_total: Optional[float] = None
+
+class ReservaStatusUpdate(BaseModel):
+    status_reserva: str
+
+class ReservaResponse(BaseModel):
+    id_reserva: int
+    id_evento: int
+    id_local: int
+    nome_evento: Optional[str] = None
+    nome_local: Optional[str] = None
+    cidade: Optional[str] = None
+    estado: Optional[str] = None
+    proprietario: Optional[str] = None
+    contato_proprietario: Optional[str] = None
+    status_reserva: str
+    data_hora_inicio: datetime
+    data_hora_fim: datetime
+    valor_total: float
+
+

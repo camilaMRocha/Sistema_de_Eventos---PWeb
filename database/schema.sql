@@ -1,4 +1,4 @@
-﻿CREATE DATABASE IF NOT EXISTS heyevents;
+CREATE DATABASE IF NOT EXISTS heyevents;
 USE heyevents;
 
 CREATE TABLE IF NOT EXISTS usuario (
@@ -343,7 +343,7 @@ LEFT JOIN ingresso_venda v ON v.id_ingresso = i.id_ingresso
 GROUP BY i.id_ingresso, i.id_evento, i.titulo_ingresso, i.tipo_ingresso, i.quantidade_total;
 
 CREATE OR REPLACE VIEW vw_local_cartao AS
-SELECT l.id_local, l.nome, l.descricao, l.preco_diaria, l.cidade, l.estado,
+SELECT l.id_local, l.nome, l.descricao, l.preco_diaria, l.capacidade, l.cidade, l.estado,
        l.quartos, l.banheiros, l.vagas_estacionamento, l.metragem,
        fo.nome_fornecedor AS proprietario,
        fo.telefone AS contato_proprietario,
@@ -355,7 +355,7 @@ JOIN fornecedor fo ON l.id_fornecedor = fo.id_fornecedor
 LEFT JOIN vw_avaliacao_media_local am ON am.id_local = l.id_local
 LEFT JOIN local_categoria lc ON lc.id_local = l.id_local
 LEFT JOIN categoria cat ON cat.id_categoria = lc.id_categoria
-GROUP BY l.id_local, l.nome, l.descricao, l.preco_diaria, l.cidade, l.estado,
+GROUP BY l.id_local, l.nome, l.descricao, l.preco_diaria, l.capacidade, l.cidade, l.estado,
          l.quartos, l.banheiros, l.vagas_estacionamento, l.metragem,
          fo.nome_fornecedor, fo.telefone, am.nota_media, am.total_avaliacoes;
 

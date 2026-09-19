@@ -1,4 +1,6 @@
 from fastapi import FastAPI, HTTPException, status
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from typing import List, Optional
 from backend.database import criar_conexao
 from backend.schemas import (
@@ -16,8 +18,15 @@ from backend.schemas import (
     ServicoResponse,
     ServicoViewResponse,
     LocalCreate,
+    LocalUpdate,
     LocalResponse,
-    LocalCardResponse
+    LocalCardResponse,
+    EventoCreate,
+    EventoUpdate,
+    EventoResponse,
+    ReservaCreate,
+    ReservaStatusUpdate,
+    ReservaResponse
 )
 
 app = FastAPI(
@@ -26,9 +35,62 @@ app = FastAPI(
     version="1.0.0"
 )
 
+app.mount("/frontend", StaticFiles(directory="frontend"), name="frontend")
+
 @app.get("/")
+def pagina_inicial():
+    return FileResponse("frontend/index.html")
+
+@app.get("/login")
+def pagina_login():
+    return FileResponse("frontend/login.html")
+
+@app.get("/cadastro")
+def pagina_cadastro():
+    return FileResponse("frontend/cadastro.html")
+
+@app.get("/meus-eventos")
+def pagina_meus_eventos():
+    return FileResponse("frontend/meus_eventos.html")
+
+@app.get("/cadastro-de-evento")
+def pagina_cadastro_evento():
+    return FileResponse("frontend/cadastro_evento.html")
+
+@app.get("/reserva")
+def pagina_reserva():
+    return FileResponse("frontend/reserva.html")
+
+@app.get("/cadastro-de-cliente")
+def pagina_cadastro_cliente():
+    return FileResponse("frontend/cadastro_cliente.html")
+
+@app.get("/cadastro-de-fornecedor")
+def pagina_cadastro_fornecedor():
+    return FileResponse("frontend/cadastro_fornecedor.html")
+
+@app.get("/cadastro-de-funcionario")
+def pagina_cadastro_funcionario():
+    return FileResponse("frontend/cadastro_funcionario.html")
+
+@app.get("/cadastro-de-local")
+def pagina_cadastro_local():
+    return FileResponse("frontend/cadastro_local.html")
+
+@app.get("/visualizar-locais")
+def pagina_visualizar_locais():
+    return FileResponse("frontend/locais.html")
+
+@app.get("/cadastro-de-servico")
+def pagina_cadastro_servico():
+    return FileResponse("frontend/cadastro_servico.html")
+
+@app.get("/visualizar-servicos")
+def pagina_visualizar_servicos():
+    return FileResponse("frontend/servicos.html")
+
+@app.get("/status")
 def health_check():
-    """Verifica se a API está online."""
     return {"status": "online", "mensagem": "API online"}
 
 @app.post("/clientes", response_model=ClienteResponse, status_code=status.HTTP_201_CREATED)
@@ -721,3 +783,599 @@ def buscar_local_por_id(id_local: int):
     finally:
         cursor.close()
         conn.close()
+
+@app.put("/locais/{id_local}", response_model=LocalCardResponse)
+def atualizar_local(id_local: int, dados: LocalUpdate):
+    """Atualiza as informações de um local existente."""
+    conn = criar_conexao()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT * FROM local WHERE id_local = %s", (id_local,))
+        local_atual = cursor.fetchone()
+        if not local_atual:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Local não encontrado."
+            )
+
+        campos = []
+        valores = []
+
+        if dados.id_fornecedor is not None:
+            campos.append("id_fornecedor = %s")
+            valores.append(dados.id_fornecedor)
+        if dados.nome is not None:
+            campos.append("nome = %s")
+            valores.append(dados.nome)
+        if dados.rua is not None:
+            campos.append("rua = %s")
+            valores.append(dados.rua)
+        if dados.numero is not None:
+            campos.append("numero = %s")
+            valores.append(dados.numero)
+        if dados.bairro is not None:
+            campos.append("bairro = %s")
+            valores.append(dados.bairro)
+        if dados.cidade is not None:
+            campos.append("cidade = %s")
+            valores.append(dados.cidade)
+        if dados.estado is not None:
+            campos.append("estado = %s")
+            valores.append(dados.estado)
+        if dados.cep is not None:
+            campos.append("cep = %s")
+            valores.append(dados.cep)
+        if dados.complemento is not None:
+            campos.append("complemento = %s")
+            valores.append(dados.complemento)
+        if dados.capacidade is not None:
+            campos.append("capacidade = %s")
+            valores.append(dados.capacidade)
+        if dados.preco_diaria is not None:
+            campos.append("preco_diaria = %s")
+            valores.append(dados.preco_diaria)
+        if dados.metragem is not None:
+            campos.append("metragem = %s")
+            valores.append(dados.metragem)
+        if dados.descricao is not None:
+            campos.append("descricao = %s")
+            valores.append(dados.descricao)
+        if dados.quartos is not None:
+            campos.append("quartos = %s")
+            valores.append(dados.quartos)
+        if dados.banheiros is not None:
+            campos.append("banheiros = %s")
+            valores.append(dados.banheiros)
+        if dados.vagas_estacionamento is not None:
+            campos.append("vagas_estacionamento = %s")
+            valores.append(dados.vagas_estacionamento)
+
+        if campos:
+            valores.append(id_local)
+            sql = f"UPDATE local SET {', '.join(campos)} WHERE id_local = %s"
+            cursor.execute(sql, tuple(valores))
+
+        if dados.categorias_ids is not None:
+            cursor.execute("DELETE FROM local_categoria WHERE id_local = %s", (id_local,))
+            for cat_id in dados.categorias_ids:
+                cursor.execute(
+                    "INSERT IGNORE INTO local_categoria (id_local, id_categoria) VALUES (%s, %s)",
+                    (id_local, cat_id)
+                )
+
+        if dados.fotos_urls is not None:
+            cursor.execute("DELETE FROM local_imagem WHERE id_local = %s", (id_local,))
+            for idx, url in enumerate(dados.fotos_urls, start=1):
+                cursor.execute(
+                    "INSERT INTO local_imagem (id_local, url_imagem, ordem) VALUES (%s, %s, %s)",
+                    (id_local, url, idx)
+                )
+
+        conn.commit()
+
+        cursor.execute("SELECT * FROM vw_local_cartao WHERE id_local = %s", (id_local,))
+        return cursor.fetchone()
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao atualizar local: {str(e)}"
+        )
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.delete("/locais/{id_local}")
+def excluir_local(id_local: int):
+    """Exclui um local do sistema."""
+    conn = criar_conexao()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT id_local FROM local WHERE id_local = %s", (id_local,))
+        if not cursor.fetchone():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Local não encontrado."
+            )
+
+        cursor.execute("DELETE FROM local WHERE id_local = %s", (id_local,))
+        conn.commit()
+        return {"mensagem": "Local excluído com sucesso."}
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao excluir local: {str(e)}"
+        )
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.post("/eventos", response_model=EventoResponse, status_code=status.HTTP_201_CREATED)
+def cadastrar_evento(dados: EventoCreate):
+    """Realiza o cadastro de um novo evento pelo cliente."""
+    conn = criar_conexao()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT id_cliente FROM cliente WHERE id_cliente = %s", (dados.id_cliente,))
+        if not cursor.fetchone():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Cliente não encontrado."
+            )
+
+        cursor.execute("SELECT id_categoria FROM categoria WHERE id_categoria = %s", (dados.id_categoria,))
+        if not cursor.fetchone():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Categoria não encontrada."
+            )
+
+        sql = """
+            INSERT INTO evento (
+                id_cliente, id_categoria, nome_evento, formato, visibilidade,
+                data_hora_inicio, data_hora_termino, descricao_evento, orcamento_estimado
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        cursor.execute(sql, (
+            dados.id_cliente, dados.id_categoria, dados.nome_evento,
+            dados.formato or 'Presencial', dados.visibilidade or 'Privado',
+            dados.data_hora_inicio, dados.data_hora_termino,
+            dados.descricao_evento, dados.orcamento_estimado or 0.0
+        ))
+        id_evento = cursor.lastrowid
+
+        if dados.fotos_urls:
+            for ordem, url in enumerate(dados.fotos_urls, start=1):
+                if url and url.strip():
+                    cursor.execute(
+                        "INSERT INTO evento_imagem (id_evento, url_imagem, ordem) VALUES (%s, %s, %s)",
+                        (id_evento, url.strip(), ordem)
+                    )
+
+        conn.commit()
+
+        cursor.execute("""
+            SELECT e.*, c.nome_categoria, p.nome_categoria AS tipo_evento
+            FROM evento e
+            JOIN categoria c ON e.id_categoria = c.id_categoria
+            LEFT JOIN categoria p ON c.id_categoria_pai = p.id_categoria
+            WHERE e.id_evento = %s
+        """, (id_evento,))
+        evento = cursor.fetchone()
+        evento["fotos_urls"] = dados.fotos_urls or []
+        return evento
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao cadastrar evento: {str(e)}"
+        )
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.get("/eventos/cliente/{id_cliente}", response_model=List[EventoResponse])
+def listar_eventos_do_cliente(id_cliente: int):
+    """Retorna a lista de eventos pertencentes a um cliente específico."""
+    conn = criar_conexao()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        sql = """
+            SELECT e.*, c.nome_categoria, p.nome_categoria AS tipo_evento,
+                   l.nome AS local_reservado, r.status_reserva
+            FROM evento e
+            JOIN categoria c ON e.id_categoria = c.id_categoria
+            LEFT JOIN categoria p ON c.id_categoria_pai = p.id_categoria
+            LEFT JOIN reserva r ON r.id_evento = e.id_evento AND r.status_reserva <> 'Cancelado'
+            LEFT JOIN local l ON r.id_local = l.id_local
+            WHERE e.id_cliente = %s
+            ORDER BY e.data_hora_inicio DESC
+        """
+        cursor.execute(sql, (id_cliente,))
+        eventos = cursor.fetchall()
+
+        for ev in eventos:
+            cursor.execute(
+                "SELECT url_imagem FROM evento_imagem WHERE id_evento = %s ORDER BY ordem ASC",
+                (ev["id_evento"],)
+            )
+            imagens = [img["url_imagem"] for img in cursor.fetchall()]
+            ev["fotos_urls"] = imagens
+
+        return eventos
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.get("/eventos/{id_evento}", response_model=EventoResponse)
+def buscar_evento_por_id(id_evento: int):
+    """Busca os detalhes de um evento específico."""
+    conn = criar_conexao()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        sql = """
+            SELECT e.*, c.nome_categoria, p.nome_categoria AS tipo_evento,
+                   l.nome AS local_reservado, r.status_reserva
+            FROM evento e
+            JOIN categoria c ON e.id_categoria = c.id_categoria
+            LEFT JOIN categoria p ON c.id_categoria_pai = p.id_categoria
+            LEFT JOIN reserva r ON r.id_evento = e.id_evento AND r.status_reserva <> 'Cancelado'
+            LEFT JOIN local l ON r.id_local = l.id_local
+            WHERE e.id_evento = %s
+        """
+        cursor.execute(sql, (id_evento,))
+        evento = cursor.fetchone()
+        if not evento:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Evento não encontrado."
+            )
+
+        cursor.execute(
+            "SELECT url_imagem FROM evento_imagem WHERE id_evento = %s ORDER BY ordem ASC",
+            (id_evento,)
+        )
+        evento["fotos_urls"] = [img["url_imagem"] for img in cursor.fetchall()]
+        return evento
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.put("/eventos/{id_evento}", response_model=EventoResponse)
+def atualizar_evento(id_evento: int, dados: EventoUpdate):
+    """Atualiza as informações de um evento existente."""
+    conn = criar_conexao()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT * FROM evento WHERE id_evento = %s", (id_evento,))
+        evento_atual = cursor.fetchone()
+        if not evento_atual:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Evento não encontrado."
+            )
+
+        campos = []
+        valores = []
+
+        if dados.nome_evento is not None:
+            campos.append("nome_evento = %s")
+            valores.append(dados.nome_evento)
+        if dados.id_categoria is not None:
+            campos.append("id_categoria = %s")
+            valores.append(dados.id_categoria)
+        if dados.formato is not None:
+            campos.append("formato = %s")
+            valores.append(dados.formato)
+        if dados.visibilidade is not None:
+            campos.append("visibilidade = %s")
+            valores.append(dados.visibilidade)
+        if dados.data_hora_inicio is not None:
+            campos.append("data_hora_inicio = %s")
+            valores.append(dados.data_hora_inicio)
+        if dados.data_hora_termino is not None:
+            campos.append("data_hora_termino = %s")
+            valores.append(dados.data_hora_termino)
+        if dados.descricao_evento is not None:
+            campos.append("descricao_evento = %s")
+            valores.append(dados.descricao_evento)
+        if dados.orcamento_estimado is not None:
+            campos.append("orcamento_estimado = %s")
+            valores.append(dados.orcamento_estimado)
+
+        if campos:
+            valores.append(id_evento)
+            sql = f"UPDATE evento SET {', '.join(campos)} WHERE id_evento = %s"
+            cursor.execute(sql, tuple(valores))
+
+        if dados.fotos_urls is not None:
+            cursor.execute("DELETE FROM evento_imagem WHERE id_evento = %s", (id_evento,))
+            for ordem, url in enumerate(dados.fotos_urls, start=1):
+                if url and url.strip():
+                    cursor.execute(
+                        "INSERT INTO evento_imagem (id_evento, url_imagem, ordem) VALUES (%s, %s, %s)",
+                        (id_evento, url.strip(), ordem)
+                    )
+
+        conn.commit()
+
+        cursor.execute("""
+            SELECT e.*, c.nome_categoria, p.nome_categoria AS tipo_evento
+            FROM evento e
+            JOIN categoria c ON e.id_categoria = c.id_categoria
+            LEFT JOIN categoria p ON c.id_categoria_pai = p.id_categoria
+            WHERE e.id_evento = %s
+        """, (id_evento,))
+        evento = cursor.fetchone()
+        cursor.execute(
+            "SELECT url_imagem FROM evento_imagem WHERE id_evento = %s ORDER BY ordem ASC",
+            (id_evento,)
+        )
+        evento["fotos_urls"] = [img["url_imagem"] for img in cursor.fetchall()]
+        return evento
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao atualizar evento: {str(e)}"
+        )
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.delete("/eventos/{id_evento}")
+def excluir_evento(id_evento: int):
+    """Exclui um evento da plataforma."""
+    conn = criar_conexao()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT id_evento FROM evento WHERE id_evento = %s", (id_evento,))
+        if not cursor.fetchone():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Evento não encontrado."
+            )
+
+        cursor.execute("DELETE FROM evento WHERE id_evento = %s", (id_evento,))
+        conn.commit()
+        return {"mensagem": "Evento excluído com sucesso."}
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao excluir evento: {str(e)}"
+        )
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.post("/reservas", response_model=ReservaResponse, status_code=status.HTTP_201_CREATED)
+def criar_reserva(dados: ReservaCreate):
+    """Cria uma nova reserva vinculando um evento a um local."""
+    conn = criar_conexao()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT id_evento, nome_evento, id_cliente FROM evento WHERE id_evento = %s", (dados.id_evento,))
+        evento = cursor.fetchone()
+        if not evento:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Evento informado não encontrado."
+            )
+
+        cursor.execute("SELECT id_local, nome, preco_diaria, cidade, estado FROM local WHERE id_local = %s", (dados.id_local,))
+        local = cursor.fetchone()
+        if not local:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Local informado não encontrado."
+            )
+
+        if dados.data_hora_fim <= dados.data_hora_inicio:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A data e horário de término devem ser posteriores ao início."
+            )
+
+        # Verificar conflito de datas ativas no mesmo local
+        sql_conflito = """
+            SELECT id_reserva FROM reserva
+            WHERE id_local = %s
+              AND status_reserva IN ('Pendente', 'Confirmado')
+              AND (%s < data_hora_fim AND %s > data_hora_inicio)
+        """
+        cursor.execute(sql_conflito, (dados.id_local, dados.data_hora_inicio, dados.data_hora_fim))
+        if cursor.fetchone():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Este espaço já possui uma reserva confirmada ou pendente para as datas e horários selecionados."
+            )
+
+        valor_total = dados.valor_total
+        if valor_total is None or valor_total <= 0:
+            delta_segundos = (dados.data_hora_fim - dados.data_hora_inicio).total_seconds()
+            dias = max(1, int((delta_segundos + 86399) // 86400))
+            valor_total = float(local["preco_diaria"]) * dias
+
+        sql_insert = """
+            INSERT INTO reserva (id_evento, id_local, status_reserva, data_hora_inicio, data_hora_fim, valor_total)
+            VALUES (%s, %s, 'Pendente', %s, %s, %s)
+        """
+        cursor.execute(sql_insert, (dados.id_evento, dados.id_local, dados.data_hora_inicio, dados.data_hora_fim, valor_total))
+        id_reserva = cursor.lastrowid
+        conn.commit()
+
+        sql_busca = """
+            SELECT r.id_reserva, r.id_evento, r.id_local, r.status_reserva,
+                   r.data_hora_inicio, r.data_hora_fim, r.valor_total,
+                   ev.nome_evento, l.nome AS nome_local, l.cidade, l.estado,
+                   fo.nome_fornecedor AS proprietario, fo.telefone AS contato_proprietario
+            FROM reserva r
+            JOIN evento ev ON r.id_evento = ev.id_evento
+            JOIN local l ON r.id_local = l.id_local
+            JOIN fornecedor fo ON l.id_fornecedor = fo.id_fornecedor
+            WHERE r.id_reserva = %s
+        """
+        cursor.execute(sql_busca, (id_reserva,))
+        return cursor.fetchone()
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao criar reserva: {str(e)}"
+        )
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.get("/reservas/cliente/{id_cliente}", response_model=List[ReservaResponse])
+def listar_reservas_cliente(id_cliente: int):
+    """Lista todas as reservas associadas aos eventos de um cliente específico."""
+    conn = criar_conexao()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        sql = """
+            SELECT r.id_reserva, r.id_evento, r.id_local, r.status_reserva,
+                   r.data_hora_inicio, r.data_hora_fim, r.valor_total,
+                   ev.nome_evento, l.nome AS nome_local, l.cidade, l.estado,
+                   fo.nome_fornecedor AS proprietario, fo.telefone AS contato_proprietario
+            FROM reserva r
+            JOIN evento ev ON r.id_evento = ev.id_evento
+            JOIN local l ON r.id_local = l.id_local
+            JOIN fornecedor fo ON l.id_fornecedor = fo.id_fornecedor
+            WHERE ev.id_cliente = %s
+            ORDER BY r.data_hora_inicio DESC
+        """
+        cursor.execute(sql, (id_cliente,))
+        return cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.get("/reservas/local/{id_local}", response_model=List[ReservaResponse])
+def listar_reservas_local(id_local: int):
+    """Lista as reservas ativas de um espaço (utilizado para consulta de calendário/disponibilidade)."""
+    conn = criar_conexao()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        sql = """
+            SELECT r.id_reserva, r.id_evento, r.id_local, r.status_reserva,
+                   r.data_hora_inicio, r.data_hora_fim, r.valor_total,
+                   ev.nome_evento, l.nome AS nome_local, l.cidade, l.estado,
+                   fo.nome_fornecedor AS proprietario, fo.telefone AS contato_proprietario
+            FROM reserva r
+            JOIN evento ev ON r.id_evento = ev.id_evento
+            JOIN local l ON r.id_local = l.id_local
+            JOIN fornecedor fo ON l.id_fornecedor = fo.id_fornecedor
+            WHERE r.id_local = %s AND r.status_reserva IN ('Pendente', 'Confirmado')
+            ORDER BY r.data_hora_inicio ASC
+        """
+        cursor.execute(sql, (id_local,))
+        return cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.get("/reservas/{id_reserva}", response_model=ReservaResponse)
+def buscar_reserva_por_id(id_reserva: int):
+    """Retorna os dados completos de uma reserva específica."""
+    conn = criar_conexao()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        sql = """
+            SELECT r.id_reserva, r.id_evento, r.id_local, r.status_reserva,
+                   r.data_hora_inicio, r.data_hora_fim, r.valor_total,
+                   ev.nome_evento, l.nome AS nome_local, l.cidade, l.estado,
+                   fo.nome_fornecedor AS proprietario, fo.telefone AS contato_proprietario
+            FROM reserva r
+            JOIN evento ev ON r.id_evento = ev.id_evento
+            JOIN local l ON r.id_local = l.id_local
+            JOIN fornecedor fo ON l.id_fornecedor = fo.id_fornecedor
+            WHERE r.id_reserva = %s
+        """
+        cursor.execute(sql, (id_reserva,))
+        reserva = cursor.fetchone()
+        if not reserva:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Reserva não encontrada."
+            )
+        return reserva
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.put("/reservas/{id_reserva}/status", response_model=ReservaResponse)
+def atualizar_status_reserva(id_reserva: int, dados: ReservaStatusUpdate):
+    """Atualiza o status de uma reserva (ex: Confirmado, Cancelado, Concluido)."""
+    conn = criar_conexao()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT id_reserva FROM reserva WHERE id_reserva = %s", (id_reserva,))
+        if not cursor.fetchone():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Reserva não encontrada."
+            )
+
+        cursor.execute("UPDATE reserva SET status_reserva = %s WHERE id_reserva = %s", (dados.status_reserva, id_reserva))
+        conn.commit()
+
+        sql = """
+            SELECT r.id_reserva, r.id_evento, r.id_local, r.status_reserva,
+                   r.data_hora_inicio, r.data_hora_fim, r.valor_total,
+                   ev.nome_evento, l.nome AS nome_local, l.cidade, l.estado,
+                   fo.nome_fornecedor AS proprietario, fo.telefone AS contato_proprietario
+            FROM reserva r
+            JOIN evento ev ON r.id_evento = ev.id_evento
+            JOIN local l ON r.id_local = l.id_local
+            JOIN fornecedor fo ON l.id_fornecedor = fo.id_fornecedor
+            WHERE r.id_reserva = %s
+        """
+        cursor.execute(sql, (id_reserva,))
+        return cursor.fetchone()
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.delete("/reservas/{id_reserva}")
+def cancelar_reserva(id_reserva: int):
+    """Cancela ou exclui uma reserva."""
+    conn = criar_conexao()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT id_reserva FROM reserva WHERE id_reserva = %s", (id_reserva,))
+        if not cursor.fetchone():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Reserva não encontrada."
+            )
+
+        cursor.execute("DELETE FROM reserva WHERE id_reserva = %s", (id_reserva,))
+        conn.commit()
+        return {"mensagem": "Reserva cancelada com sucesso."}
+    finally:
+        cursor.close()
+        conn.close()
+
+
