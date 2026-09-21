@@ -422,3 +422,32 @@ LEFT JOIN (
     JOIN reserva_servico rs ON rs.id_servico = s.id_servico
     GROUP BY s.id_fornecedor
 ) rs ON rs.id_fornecedor = f.id_fornecedor;
+
+INSERT INTO categoria (id_categoria, nome_categoria, id_categoria_pai) VALUES
+(1, 'Social', NULL),
+(2, 'Corporativo', NULL),
+(3, 'Cultural', NULL),
+(4, 'Religioso', NULL)
+ON DUPLICATE KEY UPDATE nome_categoria = VALUES(nome_categoria), id_categoria_pai = VALUES(id_categoria_pai);
+
+INSERT INTO categoria (id_categoria, nome_categoria, id_categoria_pai) VALUES
+(5, 'Casamento', 1),
+(6, 'Aniversário', 1),
+(7, 'Bodas', 1),
+(8, 'Formatura', 1),
+(9, 'Chá de Bebê', 1),
+(10, 'Confraternização', 1),
+(11, 'Congresso', 2),
+(12, 'Workshop', 2),
+(13, 'Feira', 2),
+(14, 'Palestra', 2),
+(15, 'Lançamento de Produto', 2),
+(16, 'Show', 3),
+(17, 'Festival', 3),
+(18, 'Exposição', 3),
+(19, 'Teatro', 3),
+(20, 'Batizado', 4),
+(21, 'Culto', 4),
+(22, 'Retiro', 4)
+ON DUPLICATE KEY UPDATE nome_categoria = VALUES(nome_categoria), id_categoria_pai = VALUES(id_categoria_pai);
+

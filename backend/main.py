@@ -61,18 +61,6 @@ def pagina_cadastro_evento():
 def pagina_reserva():
     return FileResponse("frontend/reserva.html")
 
-@app.get("/cadastro-de-cliente")
-def pagina_cadastro_cliente():
-    return FileResponse("frontend/cadastro_cliente.html")
-
-@app.get("/cadastro-de-fornecedor")
-def pagina_cadastro_fornecedor():
-    return FileResponse("frontend/cadastro_fornecedor.html")
-
-@app.get("/cadastro-de-funcionario")
-def pagina_cadastro_funcionario():
-    return FileResponse("frontend/cadastro_funcionario.html")
-
 @app.get("/cadastro-de-local")
 def pagina_cadastro_local():
     return FileResponse("frontend/cadastro_local.html")
