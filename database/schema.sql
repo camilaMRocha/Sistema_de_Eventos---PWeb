@@ -253,7 +253,6 @@ CREATE TABLE IF NOT EXISTS notificacao (
     FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario) ON DELETE CASCADE
 );
 
--- VIEWS
 CREATE OR REPLACE VIEW vw_eventos_publicos AS
 SELECT id_evento, nome_evento, formato, data_hora_inicio, data_hora_termino,
        descricao_evento, id_categoria, id_cliente
@@ -450,4 +449,105 @@ INSERT INTO categoria (id_categoria, nome_categoria, id_categoria_pai) VALUES
 (21, 'Culto', 4),
 (22, 'Retiro', 4)
 ON DUPLICATE KEY UPDATE nome_categoria = VALUES(nome_categoria), id_categoria_pai = VALUES(id_categoria_pai);
+
+DROP FUNCTION IF EXISTS fn_calcular_total_reserva;
+DELIMITER //
+CREATE FUNCTION fn_calcular_total_reserva(
+    p_id_local INT,
+    p_inicio DATETIME,
+    p_fim DATETIME
+)
+RETURNS DECIMAL(10, 2)
+DETERMINISTIC
+READS SQL DATA
+BEGIN
+    DECLARE v_preco_diaria DECIMAL(10, 2) DEFAULT 0.00;
+    DECLARE v_dias INT DEFAULT 1;
+
+    SELECT preco_diaria INTO v_preco_diaria
+    FROM local
+    WHERE id_local = p_id_local;
+
+    SET v_dias = GREATEST(1, CEIL(TIMESTAMPDIFF(SECOND, p_inicio, p_fim) / 86400.0));
+
+    RETURN ROUND(v_preco_diaria * v_dias, 2);
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS sp_cancelar_reserva;
+DELIMITER //
+CREATE PROCEDURE sp_cancelar_reserva(
+    IN p_id_reserva INT,
+    IN p_motivo VARCHAR(255)
+)
+BEGIN
+    DECLARE v_id_usuario INT;
+    DECLARE v_mensagem TEXT;
+    DECLARE v_status_atual VARCHAR(20);
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+
+    START TRANSACTION;
+
+    SELECT r.status_reserva, u.id_usuario
+    INTO v_status_atual, v_id_usuario
+    FROM reserva r
+    JOIN evento e ON r.id_evento = e.id_evento
+    JOIN cliente c ON e.id_cliente = c.id_cliente
+    JOIN usuario u ON c.id_usuario = u.id_usuario
+    WHERE r.id_reserva = p_id_reserva
+    FOR UPDATE;
+
+    IF v_status_atual IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Reserva nao encontrada.';
+    END IF;
+
+    IF v_status_atual = 'Cancelado' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'A reserva ja se encontra cancelada.';
+    END IF;
+
+    UPDATE reserva
+    SET status_reserva = 'Cancelado'
+    WHERE id_reserva = p_id_reserva;
+
+    SET v_mensagem = CONCAT('Sua reserva de numero ', p_id_reserva, ' foi cancelada. Motivo: ', IFNULL(p_motivo, 'Nao informado'));
+
+    INSERT INTO notificacao (id_usuario, mensagem, data_envio, visualizada)
+    VALUES (v_id_usuario, v_mensagem, NOW(), FALSE);
+
+    COMMIT;
+END //
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS trg_impedir_reserva_conflitante;
+DELIMITER //
+CREATE TRIGGER trg_impedir_reserva_conflitante
+BEFORE INSERT ON reserva
+FOR EACH ROW
+BEGIN
+    DECLARE v_conflitos INT DEFAULT 0;
+
+    IF NEW.data_hora_fim <= NEW.data_hora_inicio THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data de termino deve ser posterior a data de inicio.';
+    END IF;
+
+    SELECT COUNT(*) INTO v_conflitos
+    FROM reserva
+    WHERE id_local = NEW.id_local
+      AND status_reserva IN ('Pendente', 'Confirmado')
+      AND (NEW.data_hora_inicio < data_hora_fim AND NEW.data_hora_fim > data_hora_inicio);
+
+    IF v_conflitos > 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Conflito de agenda: o local ja possui reserva para este periodo.';
+    END IF;
+END //
+DELIMITER ;
 
