@@ -5,25 +5,144 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HeyEvents - Encontre Espaços e Serviços para Eventos</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/frontend/css/estilo.css">
+    <link rel="stylesheet" href="/css/estilo.css">
+    
+<style>
+    .body{
+        background-color: #fbfbfb;
+    }
+.hero-section {
+    background-image: url("../frontend/imagens/fundo.png") !important;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    color: #f3f2f2;
+    padding: 50px 0 50px 0 !important; 
+    margin-bottom: 40px;
+}
+
+.hero-content-box {
+    background-color: rgba(250, 250, 250, 0.707);
+    padding: 40px;                         
+    border-radius: 15px;                   
+    border: 1px solid rgba(255, 255, 255, 0.2); 
+    backdrop-filter: blur(8px);            
+}
+.navbar #areaAutenticacao .btn-teal {
+            background-color: #008282;
+            color: #ffffff;
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 10px 40px;
+            border: none;
+            transition: background-color 0.2s;
+        }
+.logo-circle-mini {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background-color: #000000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-inner-mini {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background-color: #f59e0b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000000;
+            font-size: 0.45rem;
+            font-weight: 800;
+            text-align: center;
+            line-height: 1;
+        }
+        
+.navbar #areaAutenticacao .btn-teal:hover{
+            background-color: #006666;
+            color: #ffffff;
+        }
+.nav-link-custom {
+            color: #1e293b;
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 0.95rem;
+            padding: 0 12px 0;
+        }
+
+        .nav-link-custom.active {
+            text-decoration: underline 2px;
+            color: #008282;
+        }
+.navbar #areaAutenticacao .btn-sair {
+            background-color: #ffff;
+            color: #e04b4b;
+            font-weight: 600;
+            border: none;
+            padding: 7px 22px;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+        }
+
+.navbar #areaAutenticacao .btn-sair:hover {
+            background-color: #e04b4b;
+            color: #ffffff;
+        }
+
+        .btn-teal:hover {
+            background-color: #006666;
+            color: #ffffff;
+        }
+/* Botão Entrar */
+.navbar #areaAutenticacao .btn-outline-light {
+    background-color: #ffffff !important;
+    color: #008282 !important;
+    border: 1.5px solid #008282 !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    padding: 5px 10px !important;
+    opacity: 1 !important;
+}
+
+.navbar #areaAutenticacao .btn-outline-light:hover {
+    background-color: #008282 !important;
+    color: #ffffff !important;
+    border-color: #008282 !important;
+}
+#areaAutenticacao span {
+    color: #5e6776 !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem;
+}
+</style>
 </head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+<body class="body">
+    <nav class="navbar navbar-expand-lg bg-white border-bottom shadow-sm">
         <div class="container">
-            <a class="navbar-brand" href="/">HeyEvents</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
+            <div class="d-flex align-items-center gap-3">
+            <a href="/" class="d-flex align-items-center text-decoration-none">
+                    <div class="logo-circle-mini">
+                        <div class="logo-inner-mini">Hey Event</div>
+                    </div>
+                </a>
+            </div>
+            <div class="collapse navbar-collapse d-flex align-items-center gap-3 ms-2" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link active" href="/">Início</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#secaoEspacos">Espaços</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#secaoServicos">Serviços</a></li>
+                    <li class="nav-item"><a class="nav-link-custom active" href="/">Início</a></li>
+                    <span class="text-muted">|</span>
+                    <li class="nav-item"><a class="nav-link-custom" href="#secaoEspacos">Espaços</a></li>
+                    <span class="text-muted">|</span>
+                    <li class="nav-item"><a class="nav-link-custom" href="#secaoServicos">Serviços</a></li>
                 </ul>
+
                 <div id="areaAutenticacao">
                     <div class="d-flex gap-2">
-                        <a href="/login" class="btn btn-outline-light btn-sm px-3">Entrar</a>
-                        <a href="/cadastro" class="btn btn-primary btn-sm px-3">Cadastrar-se</a>
+                      <a href="/login" class="btn btn-outline-light btn-sm px-3">Entrar</a>
+                      <a href="/cadastro" class="btn btn-sair btn-sm px-3">Cadastrar-se</a>
                     </div>
                 </div>
             </div>
@@ -34,19 +153,20 @@
         <div class="container">
             <div class="row justify-content-center">
                 <div class="col-lg-9">
-                    <h1 class="display-5 hero-title mb-3">Encontre o espaço ideal para o seu evento</h1>
-                    <p class="lead text-light-50 mb-4">Chácaras, salões de festas, sítios e auditórios para casamentos, aniversários e confraternizações.</p>
-
-                    <form id="formBusca" class="search-box mx-auto">
-                        <div class="row g-2 align-items-center">
-                            <div class="col-md-9">
-                                <input type="text" id="inputCidade" class="form-control form-control-lg border-0" placeholder="Em qual cidade você deseja realizar seu evento?">
+                    <div class="hero-content-box">
+                        <h1 class="display-5 hero-title mb-3" style="color: black;">Encontre o espaço ideal para o seu evento</h1>
+                        <p class="lead text-light-50 mb-4" style="color: black;">Chácaras, salões de festas, sítios e auditórios para casamentos, aniversários e confraternizações.</p>
+                        <form id="formBusca" class="search-box mx-auto">
+                            <div class="row g-2 align-items-center">
+                                <div class="col-md-9">
+                                    <input type="text" id="inputCidade" class="form-control form-control-lg border-0" placeholder="Em qual cidade você deseja realizar seu evento?">
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="submit" class="btn btn-primary btn-lg w-100 fw-semibold">Pesquisar</button>
+                                </div>
                             </div>
-                            <div class="col-md-3">
-                                <button type="submit" class="btn btn-primary btn-lg w-100 fw-semibold">Pesquisar</button>
-                            </div>
-                        </div>
-                    </form>
+                        </form>
+                    </div> 
                 </div>
             </div>
         </div>
@@ -62,7 +182,6 @@
             </div>
 
             <div class="row g-4" id="vitrineLocais">
-                <!-- Os cards de locais são renderizados dinamicamente pelo vitrine.js -->
             </div>
         </section>
 

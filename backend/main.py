@@ -2,8 +2,8 @@ from fastapi import FastAPI, HTTPException, status
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from typing import List, Optional
-from backend.database import criar_conexao
-from backend.schemas import (
+from database import criar_conexao
+from schemas import (
     ClienteCreate,
     ClienteResponse,
     FornecedorCreate,

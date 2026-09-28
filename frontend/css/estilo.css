@@ -1,5 +1,5 @@
 body {
-    background-color: #f4f6f9;
+    background-image: url("../imagens/fundo.png");
     font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     color: #333333;
 }
@@ -119,4 +119,37 @@ footer {
     color: #94a3b8;
     padding: 30px 0;
     margin-top: 60px;
+}
+
+/* Botão Entrar */
+#areaAutenticacao .btn-outline-light {
+    background-color: #ffffff !important;
+    color: #008282 !important;
+    border: 2px solid #008282 !important;
+    font-weight: 600;
+    padding: 7px 22px;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+}
+
+#areaAutenticacao .btn-outline-light:hover {
+    background-color: #008282 !important;
+    color: #ffffff !important;
+}
+
+/* Botão Cadastrar-se */
+#areaAutenticacao .btn-primary {
+    background-color: #008282 !important;
+    color: #ffffff !important;
+    border: 2px solid #008282 !important;
+    font-weight: 600;
+    padding: 7px 22px;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+}
+
+#areaAutenticacao .btn-primary:hover {
+    background-color: #006666 !important;
+    color: #ffffff !important;
+    border-color: #006666 !important;
 }
