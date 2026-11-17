@@ -22,6 +22,9 @@ class ReservaResponse(BaseModel):
     estado: Optional[str] = None
     proprietario: Optional[str] = None
     contato_proprietario: Optional[str] = None
+    nome_cliente: Optional[str] = None
+    telefone_cliente: Optional[str] = None
+    email_cliente: Optional[str] = None
     status_reserva: str
     data_hora_inicio: datetime
     data_hora_fim: datetime

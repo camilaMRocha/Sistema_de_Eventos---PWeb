@@ -64,11 +64,14 @@ def criar_reserva(dados: ReservaCreate):
             SELECT r.id_reserva, r.id_evento, r.id_local, r.status_reserva,
                    r.data_hora_inicio, r.data_hora_fim, r.valor_total,
                    ev.nome_evento, l.nome AS nome_local, l.cidade, l.estado,
-                   fo.nome_fornecedor AS proprietario, fo.telefone AS contato_proprietario
+                   fo.nome_fornecedor AS proprietario, fo.telefone AS contato_proprietario,
+                   cli.nome AS nome_cliente, cli.telefone AS telefone_cliente, u.email AS email_cliente
             FROM reserva r
             JOIN evento ev ON r.id_evento = ev.id_evento
             JOIN local l ON r.id_local = l.id_local
             JOIN fornecedor fo ON l.id_fornecedor = fo.id_fornecedor
+            JOIN cliente cli ON ev.id_cliente = cli.id_cliente
+            JOIN usuario u ON cli.id_usuario = u.id_usuario
             WHERE r.id_reserva = %s
         """
         cursor.execute(sql_busca, (id_reserva,))
@@ -96,15 +99,45 @@ def listar_reservas_cliente(id_cliente: int):
             SELECT r.id_reserva, r.id_evento, r.id_local, r.status_reserva,
                    r.data_hora_inicio, r.data_hora_fim, r.valor_total,
                    ev.nome_evento, l.nome AS nome_local, l.cidade, l.estado,
-                   fo.nome_fornecedor AS proprietario, fo.telefone AS contato_proprietario
+                   fo.nome_fornecedor AS proprietario, fo.telefone AS contato_proprietario,
+                   cli.nome AS nome_cliente, cli.telefone AS telefone_cliente, u.email AS email_cliente
             FROM reserva r
             JOIN evento ev ON r.id_evento = ev.id_evento
             JOIN local l ON r.id_local = l.id_local
             JOIN fornecedor fo ON l.id_fornecedor = fo.id_fornecedor
+            JOIN cliente cli ON ev.id_cliente = cli.id_cliente
+            JOIN usuario u ON cli.id_usuario = u.id_usuario
             WHERE ev.id_cliente = %s
             ORDER BY r.data_hora_inicio DESC
         """
         cursor.execute(sql, (id_cliente,))
+        return cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
+@router.get("/fornecedor/{id_fornecedor}", response_model=List[ReservaResponse])
+def listar_reservas_fornecedor(id_fornecedor: int):
+    """Lista todas as reservas solicitadas para os locais pertencentes a um fornecedor."""
+    conn = criar_conexao()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        sql = """
+            SELECT r.id_reserva, r.id_evento, r.id_local, r.status_reserva,
+                   r.data_hora_inicio, r.data_hora_fim, r.valor_total,
+                   ev.nome_evento, l.nome AS nome_local, l.cidade, l.estado,
+                   fo.nome_fornecedor AS proprietario, fo.telefone AS contato_proprietario,
+                   cli.nome AS nome_cliente, cli.telefone AS telefone_cliente, u.email AS email_cliente
+            FROM reserva r
+            JOIN evento ev ON r.id_evento = ev.id_evento
+            JOIN local l ON r.id_local = l.id_local
+            JOIN fornecedor fo ON l.id_fornecedor = fo.id_fornecedor
+            JOIN cliente cli ON ev.id_cliente = cli.id_cliente
+            JOIN usuario u ON cli.id_usuario = u.id_usuario
+            WHERE fo.id_fornecedor = %s
+            ORDER BY r.data_hora_inicio DESC
+        """
+        cursor.execute(sql, (id_fornecedor,))
         return cursor.fetchall()
     finally:
         cursor.close()
@@ -144,11 +177,14 @@ def buscar_reserva_por_id(id_reserva: int):
             SELECT r.id_reserva, r.id_evento, r.id_local, r.status_reserva,
                    r.data_hora_inicio, r.data_hora_fim, r.valor_total,
                    ev.nome_evento, l.nome AS nome_local, l.cidade, l.estado,
-                   fo.nome_fornecedor AS proprietario, fo.telefone AS contato_proprietario
+                   fo.nome_fornecedor AS proprietario, fo.telefone AS contato_proprietario,
+                   cli.nome AS nome_cliente, cli.telefone AS telefone_cliente, u.email AS email_cliente
             FROM reserva r
             JOIN evento ev ON r.id_evento = ev.id_evento
             JOIN local l ON r.id_local = l.id_local
             JOIN fornecedor fo ON l.id_fornecedor = fo.id_fornecedor
+            JOIN cliente cli ON ev.id_cliente = cli.id_cliente
+            JOIN usuario u ON cli.id_usuario = u.id_usuario
             WHERE r.id_reserva = %s
         """
         cursor.execute(sql, (id_reserva,))
@@ -183,11 +219,14 @@ def atualizar_status_reserva(id_reserva: int, dados: ReservaStatusUpdate):
             SELECT r.id_reserva, r.id_evento, r.id_local, r.status_reserva,
                    r.data_hora_inicio, r.data_hora_fim, r.valor_total,
                    ev.nome_evento, l.nome AS nome_local, l.cidade, l.estado,
-                   fo.nome_fornecedor AS proprietario, fo.telefone AS contato_proprietario
+                   fo.nome_fornecedor AS proprietario, fo.telefone AS contato_proprietario,
+                   cli.nome AS nome_cliente, cli.telefone AS telefone_cliente, u.email AS email_cliente
             FROM reserva r
             JOIN evento ev ON r.id_evento = ev.id_evento
             JOIN local l ON r.id_local = l.id_local
             JOIN fornecedor fo ON l.id_fornecedor = fo.id_fornecedor
+            JOIN cliente cli ON ev.id_cliente = cli.id_cliente
+            JOIN usuario u ON cli.id_usuario = u.id_usuario
             WHERE r.id_reserva = %s
         """
         cursor.execute(sql, (id_reserva,))
