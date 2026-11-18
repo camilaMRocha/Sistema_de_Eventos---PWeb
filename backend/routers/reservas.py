@@ -100,13 +100,15 @@ def listar_reservas_cliente(id_cliente: int):
                    r.data_hora_inicio, r.data_hora_fim, r.valor_total,
                    ev.nome_evento, l.nome AS nome_local, l.cidade, l.estado,
                    fo.nome_fornecedor AS proprietario, fo.telefone AS contato_proprietario,
-                   cli.nome AS nome_cliente, cli.telefone AS telefone_cliente, u.email AS email_cliente
+                   cli.nome AS nome_cliente, cli.telefone AS telefone_cliente, u.email AS email_cliente,
+                   pg.status_pagamento, pg.metodo_pagamento
             FROM reserva r
             JOIN evento ev ON r.id_evento = ev.id_evento
             JOIN local l ON r.id_local = l.id_local
             JOIN fornecedor fo ON l.id_fornecedor = fo.id_fornecedor
             JOIN cliente cli ON ev.id_cliente = cli.id_cliente
             JOIN usuario u ON cli.id_usuario = u.id_usuario
+            LEFT JOIN pagamento pg ON pg.id_reserva = r.id_reserva AND pg.status_pagamento = 'Aprovado'
             WHERE ev.id_cliente = %s
             ORDER BY r.data_hora_inicio DESC
         """
@@ -127,13 +129,15 @@ def listar_reservas_fornecedor(id_fornecedor: int):
                    r.data_hora_inicio, r.data_hora_fim, r.valor_total,
                    ev.nome_evento, l.nome AS nome_local, l.cidade, l.estado,
                    fo.nome_fornecedor AS proprietario, fo.telefone AS contato_proprietario,
-                   cli.nome AS nome_cliente, cli.telefone AS telefone_cliente, u.email AS email_cliente
+                   cli.nome AS nome_cliente, cli.telefone AS telefone_cliente, u.email AS email_cliente,
+                   pg.status_pagamento, pg.metodo_pagamento
             FROM reserva r
             JOIN evento ev ON r.id_evento = ev.id_evento
             JOIN local l ON r.id_local = l.id_local
             JOIN fornecedor fo ON l.id_fornecedor = fo.id_fornecedor
             JOIN cliente cli ON ev.id_cliente = cli.id_cliente
             JOIN usuario u ON cli.id_usuario = u.id_usuario
+            LEFT JOIN pagamento pg ON pg.id_reserva = r.id_reserva AND pg.status_pagamento = 'Aprovado'
             WHERE fo.id_fornecedor = %s
             ORDER BY r.data_hora_inicio DESC
         """

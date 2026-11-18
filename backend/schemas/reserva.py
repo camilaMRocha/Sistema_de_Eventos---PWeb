@@ -26,6 +26,8 @@ class ReservaResponse(BaseModel):
     telefone_cliente: Optional[str] = None
     email_cliente: Optional[str] = None
     status_reserva: str
+    status_pagamento: Optional[str] = None
+    metodo_pagamento: Optional[str] = None
     data_hora_inicio: datetime
     data_hora_fim: datetime
     valor_total: float

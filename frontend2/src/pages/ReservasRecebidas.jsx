@@ -210,7 +210,40 @@ export default function ReservasRecebidas() {
                       {r.nome_local}
                     </h3>
                   </div>
-                  <div>{getStatusBadge(r.status_reserva)}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {r.status_pagamento === 'Aprovado' ? (
+                      <span
+                        style={{
+                          backgroundColor: '#dcfce7',
+                          color: '#166534',
+                          padding: '0.2rem 0.6rem',
+                          borderRadius: '6px',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.25rem',
+                        }}
+                      >
+                        <CheckCircle size={13} />
+                        Pago ({r.metodo_pagamento})
+                      </span>
+                    ) : r.status_reserva === 'Confirmado' ? (
+                      <span
+                        style={{
+                          backgroundColor: '#fef3c7',
+                          color: '#92400e',
+                          padding: '0.2rem 0.6rem',
+                          borderRadius: '6px',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                        }}
+                      >
+                        Aguardando Pagamento
+                      </span>
+                    ) : null}
+                    {getStatusBadge(r.status_reserva)}
+                  </div>
                 </div>
 
                 <div

@@ -74,18 +74,20 @@ def cadastrar_evento(dados: EventoCreate):
 
 @router.get("/cliente/{id_cliente}", response_model=List[EventoResponse])
 def listar_eventos_do_cliente(id_cliente: int):
-    """Retorna a lista de eventos pertencentes a um cliente específico."""
+    """Retorna a lista de eventos pertencentes a um cliente específico com status de reserva e pagamento."""
     conn = criar_conexao()
     cursor = conn.cursor(dictionary=True)
     try:
         sql = """
             SELECT e.*, c.nome_categoria, p.nome_categoria AS tipo_evento,
-                   l.nome AS local_reservado, r.status_reserva
+                   l.nome AS local_reservado, r.id_reserva, r.status_reserva, r.valor_total AS valor_reserva,
+                   pg.id_pagamento, pg.status_pagamento, pg.metodo_pagamento, pg.data_pagamento
             FROM evento e
             JOIN categoria c ON e.id_categoria = c.id_categoria
             LEFT JOIN categoria p ON c.id_categoria_pai = p.id_categoria
             LEFT JOIN reserva r ON r.id_evento = e.id_evento AND r.status_reserva <> 'Cancelado'
             LEFT JOIN local l ON r.id_local = l.id_local
+            LEFT JOIN pagamento pg ON pg.id_reserva = r.id_reserva AND pg.status_pagamento = 'Aprovado'
             WHERE e.id_cliente = %s
             ORDER BY e.data_hora_inicio DESC
         """
@@ -113,12 +115,14 @@ def buscar_evento_por_id(id_evento: int):
     try:
         sql = """
             SELECT e.*, c.nome_categoria, p.nome_categoria AS tipo_evento,
-                   l.nome AS local_reservado, r.status_reserva
+                   l.nome AS local_reservado, r.id_reserva, r.status_reserva, r.valor_total AS valor_reserva,
+                   pg.id_pagamento, pg.status_pagamento, pg.metodo_pagamento, pg.data_pagamento
             FROM evento e
             JOIN categoria c ON e.id_categoria = c.id_categoria
             LEFT JOIN categoria p ON c.id_categoria_pai = p.id_categoria
             LEFT JOIN reserva r ON r.id_evento = e.id_evento AND r.status_reserva <> 'Cancelado'
             LEFT JOIN local l ON r.id_local = l.id_local
+            LEFT JOIN pagamento pg ON pg.id_reserva = r.id_reserva AND pg.status_pagamento = 'Aprovado'
             WHERE e.id_evento = %s
         """
         cursor.execute(sql, (id_evento,))

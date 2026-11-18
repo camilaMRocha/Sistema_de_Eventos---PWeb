@@ -41,3 +41,9 @@ class EventoResponse(BaseModel):
     fotos_urls: Optional[List[str]] = None
     local_reservado: Optional[str] = None
     status_reserva: Optional[str] = None
+    id_reserva: Optional[int] = None
+    valor_reserva: Optional[float] = None
+    id_pagamento: Optional[int] = None
+    status_pagamento: Optional[str] = None
+    metodo_pagamento: Optional[str] = None
+    data_pagamento: Optional[datetime] = None

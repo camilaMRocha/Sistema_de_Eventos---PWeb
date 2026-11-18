@@ -12,8 +12,13 @@ export default function Reserva() {
   const [local, setLocal] = useState(null);
   const [eventos, setEventos] = useState([]);
   const [idEventoSelecionado, setIdEventoSelecionado] = useState('');
-  const [dataHoraInicio, setDataHoraInicio] = useState('');
-  const [dataHoraFim, setDataHoraFim] = useState('');
+
+  // Data e hora separadas (fiel ao HTML original)
+  const [dataInicio, setDataInicio] = useState('');
+  const [horaInicio, setHoraInicio] = useState('18:00');
+  const [dataFim, setDataFim] = useState('');
+  const [horaFim, setHoraFim] = useState('18:00');
+
   const [valorCalculado, setValorCalculado] = useState(0);
   const [totalDias, setTotalDias] = useState(1);
 
@@ -28,7 +33,7 @@ export default function Reserva() {
     setLoading(true);
     api.get(`/locais/${id_local}`)
       .then(setLocal)
-      .catch((err) => setError('Erro ao carregar detalhes do espaço.'))
+      .catch(() => setError('Erro ao carregar detalhes do espaço.'))
       .finally(() => setLoading(false));
   }, [id_local]);
 
@@ -48,13 +53,13 @@ export default function Reserva() {
 
   // Recalcular valor total quando as datas mudarem
   useEffect(() => {
-    if (!local || !dataHoraInicio || !dataHoraFim) {
+    if (!local || !dataInicio || !dataFim) {
       if (local) setValorCalculado(parseFloat(local.preco_diaria));
       return;
     }
 
-    const inicio = new Date(dataHoraInicio);
-    const fim = new Date(dataHoraFim);
+    const inicio = new Date(`${dataInicio}T${horaInicio || '00:00'}:00`);
+    const fim = new Date(`${dataFim}T${horaFim || '00:00'}:00`);
 
     if (fim > inicio) {
       const diffMs = fim - inicio;
@@ -62,7 +67,7 @@ export default function Reserva() {
       setTotalDias(diffDias);
       setValorCalculado(diffDias * parseFloat(local.preco_diaria));
     }
-  }, [dataHoraInicio, dataHoraFim, local]);
+  }, [dataInicio, horaInicio, dataFim, horaFim, local]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -74,12 +79,15 @@ export default function Reserva() {
       return;
     }
 
-    if (!dataHoraInicio || !dataHoraFim) {
+    if (!dataInicio || !dataFim) {
       setError('Informe as datas e horários de início e término.');
       return;
     }
 
-    if (new Date(dataHoraFim) <= new Date(dataHoraInicio)) {
+    const dataHoraInicioCompleta = `${dataInicio}T${horaInicio || '00:00'}:00`;
+    const dataHoraFimCompleta = `${dataFim}T${horaFim || '00:00'}:00`;
+
+    if (new Date(dataHoraFimCompleta) <= new Date(dataHoraInicioCompleta)) {
       setError('A data de término deve ser posterior à data de início.');
       return;
     }
@@ -90,8 +98,8 @@ export default function Reserva() {
       const payload = {
         id_evento: parseInt(idEventoSelecionado, 10),
         id_local: parseInt(id_local, 10),
-        data_hora_inicio: dataHoraInicio,
-        data_hora_fim: dataHoraFim,
+        data_hora_inicio: dataHoraInicioCompleta,
+        data_hora_fim: dataHoraFimCompleta,
         valor_total: valorCalculado,
       };
 
@@ -158,23 +166,23 @@ export default function Reserva() {
         >
           <div className="flex items-center justify-between" style={{ marginBottom: '0.5rem' }}>
             <h3 style={{ fontSize: '1.25rem', color: 'var(--secondary)' }}>{local.nome}</h3>
-            <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--primary)' }}>
+            <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--primary)' }}>
               R$ {parseFloat(local.preco_diaria).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} / diária
             </span>
           </div>
 
           <div className="flex items-center gap-4" style={{ fontSize: '0.88rem', color: '#475569' }}>
-            <span className="flex items-center gap-2">
-              <MapPin size={15} color="var(--primary)" />
+            <span className="flex items-center gap-1">
+              <MapPin size={15} />
               {local.cidade} / {local.estado}
             </span>
-            <span className="flex items-center gap-2">
+            <span className="flex items-center gap-1">
               <Users size={15} />
               Até {local.capacidade} pessoas
             </span>
-            <span>
-              Proprietário: <strong>{local.proprietario}</strong>
-            </span>
+            {local.proprietario && (
+              <span>Proprietário: <strong>{local.proprietario}</strong></span>
+            )}
           </div>
         </div>
 
@@ -195,7 +203,7 @@ export default function Reserva() {
         {!isAuthenticated ? (
           <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
             <p style={{ fontSize: '1.05rem', color: '#475569', marginBottom: '1.5rem' }}>
-              Para alugar este espaço, você precisa entrar na sua conta de organizador.
+              Você precisa estar conectado à sua conta de Cliente para solicitar uma reserva.
             </p>
             <div className="flex gap-3 justify-center">
               <Link to="/login" className="btn btn-primary">
@@ -237,27 +245,46 @@ export default function Reserva() {
               </select>
             </div>
 
+            {/* Data e Horário separados exatamente como no HTML original */}
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Data e Horário de Início da Reserva *</label>
-                <input
-                  type="datetime-local"
-                  required
-                  className="form-control"
-                  value={dataHoraInicio}
-                  onChange={(e) => setDataHoraInicio(e.target.value)}
-                />
+                <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '0.5rem' }}>
+                  <input
+                    type="date"
+                    required
+                    className="form-control"
+                    value={dataInicio}
+                    onChange={(e) => setDataInicio(e.target.value)}
+                  />
+                  <input
+                    type="time"
+                    required
+                    className="form-control"
+                    value={horaInicio}
+                    onChange={(e) => setHoraInicio(e.target.value)}
+                  />
+                </div>
               </div>
 
               <div className="form-group">
                 <label className="form-label">Data e Horário de Término da Reserva *</label>
-                <input
-                  type="datetime-local"
-                  required
-                  className="form-control"
-                  value={dataHoraFim}
-                  onChange={(e) => setDataHoraFim(e.target.value)}
-                />
+                <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '0.5rem' }}>
+                  <input
+                    type="date"
+                    required
+                    className="form-control"
+                    value={dataFim}
+                    onChange={(e) => setDataFim(e.target.value)}
+                  />
+                  <input
+                    type="time"
+                    required
+                    className="form-control"
+                    value={horaFim}
+                    onChange={(e) => setHoraFim(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
 
@@ -283,7 +310,7 @@ export default function Reserva() {
 
                 <div style={{ textAlign: 'right' }}>
                   <span style={{ fontSize: '0.8rem', color: '#166534' }}>Total Estimado da Locação</span>
-                  <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#15803d' }}>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#166534' }}>
                     R$ {valorCalculado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </div>
                 </div>
@@ -294,7 +321,7 @@ export default function Reserva() {
               type="submit"
               disabled={submitting}
               className="btn btn-primary"
-              style={{ width: '100%', padding: '0.85rem', fontSize: '1rem' }}
+              style={{ width: '100%', padding: '0.85rem' }}
             >
               <Calendar size={18} />
               {submitting ? 'Enviando Solicitação...' : 'Confirmar e Enviar Solicitação de Reserva'}

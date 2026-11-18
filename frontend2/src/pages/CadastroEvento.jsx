@@ -45,8 +45,13 @@ export default function CadastroEvento() {
   const [idCategoria, setIdCategoria] = useState('');
   const [formato, setFormato] = useState('Presencial');
   const [visibilidade, setVisibilidade] = useState('Privado');
-  const [dataHoraInicio, setDataHoraInicio] = useState('');
-  const [dataHoraTermino, setDataHoraTermino] = useState('');
+
+  // Data e hora separadas (fiel ao HTML original)
+  const [dataInicio, setDataInicio] = useState('');
+  const [horaInicio, setHoraInicio] = useState('19:00');
+  const [dataTermino, setDataTermino] = useState('');
+  const [horaTermino, setHoraTermino] = useState('23:00');
+
   const [descricaoEvento, setDescricaoEvento] = useState('');
   const [orcamentoEstimado, setOrcamentoEstimado] = useState('');
 
@@ -54,7 +59,7 @@ export default function CadastroEvento() {
   useEffect(() => {
     api.get('/categorias/tipos')
       .then(setTipos)
-      .catch((err) => setError('Erro ao carregar tipos de eventos.'));
+      .catch(() => setError('Erro ao carregar tipos de eventos.'));
   }, []);
 
   // Carregar subcategorias ao mudar o tipo pai
@@ -85,17 +90,19 @@ export default function CadastroEvento() {
           setDescricaoEvento(ev.descricao_evento || '');
           setOrcamentoEstimado(ev.orcamento_estimado || '');
 
-          // Formatar datas para datetime-local (YYYY-MM-DDTHH:mm)
           if (ev.data_hora_inicio) {
-            setDataHoraInicio(ev.data_hora_inicio.slice(0, 16));
+            const [d, h] = ev.data_hora_inicio.slice(0, 16).split('T');
+            setDataInicio(d);
+            if (h) setHoraInicio(h);
           }
           if (ev.data_hora_termino) {
-            setDataHoraTermino(ev.data_hora_termino.slice(0, 16));
+            const [d, h] = ev.data_hora_termino.slice(0, 16).split('T');
+            setDataTermino(d);
+            if (h) setHoraTermino(h);
           }
 
           if (ev.id_categoria) {
             setIdCategoria(ev.id_categoria);
-            // Buscar detalhes da hierarquia para pré-selecionar o tipo pai
             api.get('/categorias/hierarquia').then((hierarquia) => {
               const cat = hierarquia.find((c) => c.id_categoria === ev.id_categoria);
               if (cat && cat.id_categoria_pai) {
@@ -114,13 +121,26 @@ export default function CadastroEvento() {
     setError('');
     setSuccess('');
 
-    if (new Date(dataHoraTermino) <= new Date(dataHoraInicio)) {
+    if (!dataInicio || !dataTermino) {
+      setError('Por favor, preencha as datas de início e término.');
+      return;
+    }
+
+    const dataHoraInicioCompleta = `${dataInicio}T${horaInicio || '00:00'}:00`;
+    const dataHoraTerminoCompleta = `${dataTermino}T${horaTermino || '00:00'}:00`;
+
+    if (new Date(dataHoraTerminoCompleta) <= new Date(dataHoraInicioCompleta)) {
       setError('A data e horário de término devem ser posteriores ao início.');
       return;
     }
 
     if (!idCategoria) {
-      setError('Selecione uma categoria válida para o evento.');
+      setError('Selecione uma subcategoria para o evento.');
+      return;
+    }
+
+    if (!user?.id_perfil) {
+      setError('Sessão de cliente não identificada. Por favor, faça login novamente.');
       return;
     }
 
@@ -132,8 +152,8 @@ export default function CadastroEvento() {
         id_categoria: parseInt(idCategoria, 10),
         formato,
         visibilidade,
-        data_hora_inicio: dataHoraInicio,
-        data_hora_termino: dataHoraTermino,
+        data_hora_inicio: dataHoraInicioCompleta,
+        data_hora_termino: dataHoraTerminoCompleta,
         descricao_evento: descricaoEvento || null,
         orcamento_estimado: orcamentoEstimado ? parseFloat(orcamentoEstimado) : 0.0,
       };
@@ -149,7 +169,7 @@ export default function CadastroEvento() {
 
       setTimeout(() => {
         navigate('/meus-eventos');
-      }, 1200);
+      }, 1000);
     } catch (err) {
       setError(err.message || 'Erro ao salvar evento.');
     } finally {
@@ -266,27 +286,46 @@ export default function CadastroEvento() {
             </div>
           </div>
 
+          {/* Data e Horário separados exatamente como no HTML original */}
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">Data e Horário de Início *</label>
-              <input
-                type="datetime-local"
-                required
-                className="form-control"
-                value={dataHoraInicio}
-                onChange={(e) => setDataHoraInicio(e.target.value)}
-              />
+              <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '0.5rem' }}>
+                <input
+                  type="date"
+                  required
+                  className="form-control"
+                  value={dataInicio}
+                  onChange={(e) => setDataInicio(e.target.value)}
+                />
+                <input
+                  type="time"
+                  required
+                  className="form-control"
+                  value={horaInicio}
+                  onChange={(e) => setHoraInicio(e.target.value)}
+                />
+              </div>
             </div>
 
             <div className="form-group">
               <label className="form-label">Data e Horário de Término *</label>
-              <input
-                type="datetime-local"
-                required
-                className="form-control"
-                value={dataHoraTermino}
-                onChange={(e) => setDataHoraTermino(e.target.value)}
-              />
+              <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '0.5rem' }}>
+                <input
+                  type="date"
+                  required
+                  className="form-control"
+                  value={dataTermino}
+                  onChange={(e) => setDataTermino(e.target.value)}
+                />
+                <input
+                  type="time"
+                  required
+                  className="form-control"
+                  value={horaTermino}
+                  onChange={(e) => setHoraTermino(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
@@ -295,10 +334,10 @@ export default function CadastroEvento() {
             <textarea
               rows="3"
               className="form-control"
-              placeholder="Descreva a temática, atrações e informações importantes..."
+              placeholder="Descreva detalhes, temática, convidados especiais..."
               value={descricaoEvento}
               onChange={(e) => setDescricaoEvento(e.target.value)}
-            ></textarea>
+            />
           </div>
 
           <div className="form-group">
@@ -306,22 +345,26 @@ export default function CadastroEvento() {
             <input
               type="number"
               min="0"
-              step="50"
+              step="100"
               className="form-control"
-              placeholder="Ex: 5000.00"
+              placeholder="Ex: 15000"
               value={orcamentoEstimado}
               onChange={(e) => setOrcamentoEstimado(e.target.value)}
             />
           </div>
 
-          <div className="flex gap-3" style={{ marginTop: '2rem' }}>
-            <button type="submit" disabled={loading} className="btn btn-primary" style={{ flex: 1 }}>
-              <Save size={18} />
-              {loading ? 'Salvando...' : isEditing ? 'Atualizar Evento' : 'Cadastrar Evento'}
-            </button>
+          <div className="flex items-center justify-end gap-3" style={{ marginTop: '2rem' }}>
             <Link to="/meus-eventos" className="btn btn-secondary">
               Cancelar
             </Link>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn btn-primary"
+            >
+              <Save size={18} />
+              {loading ? 'Salvando...' : isEditing ? 'Salvar Alterações' : 'Cadastrar Evento'}
+            </button>
           </div>
         </form>
       </div>

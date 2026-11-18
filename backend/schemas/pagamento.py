@@ -16,3 +16,5 @@ class PagamentoResponse(BaseModel):
     data_pagamento: Optional[datetime] = None
     metodo_pagamento: str
     status_pagamento: str
+    nome_local: Optional[str] = None
+    nome_evento: Optional[str] = None

@@ -2,7 +2,19 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
-import { Search, AlertCircle, CheckCircle } from 'lucide-react';
+import {
+  Search,
+  AlertCircle,
+  CheckCircle,
+  CreditCard,
+  QrCode,
+  Barcode,
+  Copy,
+  Check,
+  FileText,
+  X,
+  Lock,
+} from 'lucide-react';
 
 function sanitizarTexto(str) {
   if (!str || typeof str !== 'string') return str || '';
@@ -32,7 +44,23 @@ export default function MeusEventos() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
+
+  // Modais
   const [modalExcluir, setModalExcluir] = useState(null);
+  const [modalPagamento, setModalPagamento] = useState(null);
+  const [modalComprovante, setModalComprovante] = useState(null);
+
+  // Estado do Pagamento
+  const [metodoPagamento, setMetodoPagamento] = useState('Pix');
+  const [processandoPagamento, setProcessandoPagamento] = useState(false);
+  const [erroPagamento, setErroPagamento] = useState('');
+  const [pixCopiado, setPixCopiado] = useState(false);
+
+  // Campos do Cartão
+  const [numCartao, setNumCartao] = useState('4532 1234 5678 9012');
+  const [titularCartao, setTitularCartao] = useState('CLIENTE HEYEVENTS');
+  const [validadeCartao, setValidadeCartao] = useState('12/28');
+  const [cvvCartao, setCvvCartao] = useState('123');
 
   const carregarEventos = async () => {
     if (!user?.id_perfil) return;
@@ -68,6 +96,75 @@ export default function MeusEventos() {
       setError(err.message || 'Erro ao excluir evento.');
       setModalExcluir(null);
     }
+  };
+
+  const abrirModalPagamento = (evento) => {
+    setModalPagamento(evento);
+    setMetodoPagamento('Pix');
+    setErroPagamento('');
+    setPixCopiado(false);
+  };
+
+  const handleEfetuarPagamento = async (e) => {
+    e.preventDefault();
+    if (!modalPagamento?.id_reserva) return;
+
+    setProcessandoPagamento(true);
+    setErroPagamento('');
+
+    try {
+      const payload = {
+        id_reserva: modalPagamento.id_reserva,
+        valor: modalPagamento.valor_reserva || 0,
+        metodo_pagamento: metodoPagamento,
+      };
+
+      const resultado = await api.post('/pagamentos', payload);
+
+      setEventos((prev) =>
+        prev.map((ev) =>
+          ev.id_evento === modalPagamento.id_evento
+            ? {
+                ...ev,
+                id_pagamento: resultado.id_pagamento,
+                status_pagamento: 'Aprovado',
+                metodo_pagamento: resultado.metodo_pagamento,
+                data_pagamento: resultado.data_pagamento,
+              }
+            : ev
+        )
+      );
+
+      setModalPagamento(null);
+      setModalComprovante(resultado);
+      setMsg('Pagamento aprovado com sucesso! Sua reserva está garantida.');
+      setTimeout(() => setMsg(''), 5000);
+    } catch (err) {
+      setErroPagamento(err.message || 'Erro ao processar o pagamento.');
+    } finally {
+      setProcessandoPagamento(false);
+    }
+  };
+
+  const abrirComprovante = async (ev) => {
+    try {
+      if (ev.id_pagamento) {
+        const dados = await api.get(`/pagamentos/${ev.id_pagamento}`);
+        setModalComprovante(dados);
+      } else if (ev.id_reserva) {
+        const dados = await api.get(`/pagamentos/reserva/${ev.id_reserva}`);
+        setModalComprovante(dados);
+      }
+    } catch (err) {
+      setError(err.message || 'Comprovante não localizado.');
+    }
+  };
+
+  const copiarCodigoPix = () => {
+    const mockHash = '00020126580014BR.GOV.BCB.PIX0136heyevents-reserva-pagamento5204000053039865802BR5925HEYEVENTS PLATAFORMA6009CAMPINAS62070503***6304E8A2';
+    navigator.clipboard.writeText(mockHash);
+    setPixCopiado(true);
+    setTimeout(() => setPixCopiado(false), 3000);
   };
 
   const formatarDataHora = (isoString) => {
@@ -115,14 +212,14 @@ export default function MeusEventos() {
       </div>
 
       {error && (
-        <div className="alert alert-danger" style={{ maxWidth: '850px', margin: '0 auto 1.5rem auto' }}>
+        <div className="alert alert-danger" style={{ maxWidth: '880px', margin: '0 auto 1.5rem auto' }}>
           <AlertCircle size={18} />
           <span>{error}</span>
         </div>
       )}
 
       {msg && (
-        <div className="alert alert-success" style={{ maxWidth: '850px', margin: '0 auto 1.5rem auto' }}>
+        <div className="alert alert-success" style={{ maxWidth: '880px', margin: '0 auto 1.5rem auto' }}>
           <CheckCircle size={18} />
           <span>{msg}</span>
         </div>
@@ -161,6 +258,10 @@ export default function MeusEventos() {
 
             const imagemUrl =
               ev.fotos_urls && ev.fotos_urls.length > 0 && ev.fotos_urls[0] ? ev.fotos_urls[0] : null;
+
+            const isPago = ev.status_pagamento === 'Aprovado';
+            const isConfirmado = ev.status_reserva === 'Confirmado';
+            const isConcluido = ev.status_reserva === 'Concluido';
 
             return (
               <div key={ev.id_evento} className="event-card">
@@ -232,24 +333,110 @@ export default function MeusEventos() {
                       Orçamento Estimado: <span style={{ color: '#16a34a' }}>{orcamento}</span>
                     </div>
 
-                    <div style={{ fontSize: '0.88rem', marginTop: '0.4rem' }}>
+                    {/* Bloco de Local e Pagamento */}
+                    <div style={{ fontSize: '0.88rem', marginTop: '0.5rem', backgroundColor: '#f8fafc', padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                       {ev.local_reservado ? (
                         <div>
-                          <strong>Local:</strong>{' '}
-                          <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{ev.local_reservado}</span>{' '}
-                          <span
-                            style={{
-                              backgroundColor: ev.status_reserva === 'Confirmado' ? '#dcfce7' : '#fef3c7',
-                              color: ev.status_reserva === 'Confirmado' ? '#166534' : '#92400e',
-                              padding: '0.15rem 0.5rem',
-                              borderRadius: '4px',
-                              fontSize: '0.78rem',
-                              fontWeight: 600,
-                              marginLeft: '0.3rem',
-                            }}
-                          >
-                            {ev.status_reserva}
-                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                            <div>
+                              <strong>Local:</strong>{' '}
+                              <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{ev.local_reservado}</span>{' '}
+                              <span
+                                style={{
+                                  backgroundColor:
+                                    ev.status_reserva === 'Confirmado'
+                                      ? '#dcfce7'
+                                      : ev.status_reserva === 'Concluido'
+                                      ? '#e0f2fe'
+                                      : '#fef3c7',
+                                  color:
+                                    ev.status_reserva === 'Confirmado'
+                                      ? '#166534'
+                                      : ev.status_reserva === 'Concluido'
+                                      ? '#0369a1'
+                                      : '#92400e',
+                                  padding: '0.15rem 0.5rem',
+                                  borderRadius: '4px',
+                                  fontSize: '0.78rem',
+                                  fontWeight: 600,
+                                  marginLeft: '0.3rem',
+                                }}
+                              >
+                                {ev.status_reserva}
+                              </span>
+                            </div>
+
+                            {ev.valor_reserva && (
+                              <div style={{ fontSize: '0.85rem', color: '#475569' }}>
+                                Valor da Locação:{' '}
+                                <strong style={{ color: 'var(--primary)' }}>
+                                  R$ {Number(ev.valor_reserva).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </strong>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Estado Financeiro da Reserva */}
+                          <div style={{ marginTop: '0.45rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #edf2f7', paddingTop: '0.4rem' }}>
+                            {isPago ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span
+                                  style={{
+                                    backgroundColor: '#dcfce7',
+                                    color: '#166534',
+                                    padding: '0.2rem 0.6rem',
+                                    borderRadius: '4px',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 600,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.3rem',
+                                  }}
+                                >
+                                  <CheckCircle size={14} />
+                                  Locação Paga ({ev.metodo_pagamento})
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => abrirComprovante(ev)}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'var(--primary)',
+                                    fontSize: '0.82rem',
+                                    textDecoration: 'underline',
+                                    cursor: 'pointer',
+                                    padding: 0,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.2rem',
+                                  }}
+                                >
+                                  <FileText size={13} />
+                                  Ver Comprovante
+                                </button>
+                              </div>
+                            ) : isConfirmado ? (
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                                <span style={{ color: '#b45309', fontSize: '0.82rem', fontWeight: 600 }}>
+                                  Reserva confirmada. Efetue o pagamento para garantir a data:
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => abrirModalPagamento(ev)}
+                                  className="btn btn-sm btn-primary"
+                                  style={{ padding: '0.3rem 0.85rem', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                                >
+                                  <CreditCard size={14} />
+                                  Pagar Reserva
+                                </button>
+                              </div>
+                            ) : (
+                              <span style={{ color: '#64748b', fontSize: '0.82rem' }}>
+                                O pagamento será liberado assim que o fornecedor aprovar o pedido.
+                              </span>
+                            )}
+                          </div>
                         </div>
                       ) : (
                         <div style={{ color: '#64748b' }}>
@@ -278,13 +465,34 @@ export default function MeusEventos() {
                     <Link to={`/eventos/editar/${ev.id_evento}`} className="btn-teal">
                       Editar
                     </Link>
-                    <button
-                      type="button"
-                      onClick={() => abrirModalExcluir(ev)}
-                      className="btn-coral"
-                    >
-                      Excluir
-                    </button>
+
+                    {isConcluido ? (
+                      <button
+                        type="button"
+                        disabled
+                        title="Eventos concluídos não podem ser excluídos para preservação de histórico contábil."
+                        style={{
+                          backgroundColor: '#e2e8f0',
+                          color: '#94a3b8',
+                          border: 'none',
+                          padding: '8px 22px',
+                          borderRadius: '8px',
+                          fontSize: '0.85rem',
+                          fontWeight: 600,
+                          cursor: 'not-allowed',
+                        }}
+                      >
+                        Concluído
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => abrirModalExcluir(ev)}
+                        className="btn-coral"
+                      >
+                        Excluir
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -303,7 +511,362 @@ export default function MeusEventos() {
         </Link>
       </div>
 
-      {/* Modal de Confirmação de Exclusão (Figma / HTML) */}
+      {/* Modal de Simulação de Pagamento */}
+      {modalPagamento && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '1rem',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              maxWidth: '520px',
+              width: '100%',
+              padding: '1.75rem',
+              boxShadow: '0 15px 35px rgba(0, 0, 0, 0.25)',
+              position: 'relative',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.3rem', color: 'var(--secondary)', fontWeight: 700, margin: 0 }}>
+                Pagamento da Reserva
+              </h3>
+              <button
+                type="button"
+                onClick={() => setModalPagamento(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Resumo da Cobrança */}
+            <div style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '1.25rem' }}>
+              <div style={{ fontSize: '0.88rem', color: '#64748b', marginBottom: '0.2rem' }}>
+                Reserva #{modalPagamento.id_reserva} &bull; {modalPagamento.nome_evento}
+              </div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--secondary)', marginBottom: '0.5rem' }}>
+                {modalPagamento.local_reservado}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '0.5rem' }}>
+                <span style={{ fontSize: '0.9rem', color: '#475569' }}>Valor da Locação:</span>
+                <strong style={{ fontSize: '1.35rem', color: 'var(--primary)' }}>
+                  R$ {Number(modalPagamento.valor_reserva || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </strong>
+              </div>
+            </div>
+
+            {erroPagamento && (
+              <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>
+                <AlertCircle size={16} />
+                <span>{erroPagamento}</span>
+              </div>
+            )}
+
+            {/* Seleção do Método */}
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem' }}>
+                Selecione a forma de pagamento:
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setMetodoPagamento('Pix')}
+                  style={{
+                    padding: '0.75rem 0.5rem',
+                    borderRadius: '8px',
+                    border: metodoPagamento === 'Pix' ? '2px solid var(--primary)' : '1px solid #cbd5e1',
+                    backgroundColor: metodoPagamento === 'Pix' ? '#f0f9ff' : '#ffffff',
+                    fontWeight: 600,
+                    fontSize: '0.85rem',
+                    color: metodoPagamento === 'Pix' ? 'var(--primary)' : '#475569',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                  }}
+                >
+                  <QrCode size={20} />
+                  Pix (Instantâneo)
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setMetodoPagamento('Cartao de Credito')}
+                  style={{
+                    padding: '0.75rem 0.5rem',
+                    borderRadius: '8px',
+                    border: metodoPagamento === 'Cartao de Credito' ? '2px solid var(--primary)' : '1px solid #cbd5e1',
+                    backgroundColor: metodoPagamento === 'Cartao de Credito' ? '#f0f9ff' : '#ffffff',
+                    fontWeight: 600,
+                    fontSize: '0.85rem',
+                    color: metodoPagamento === 'Cartao de Credito' ? 'var(--primary)' : '#475569',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                  }}
+                >
+                  <CreditCard size={20} />
+                  Cartão de Crédito
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setMetodoPagamento('Boleto')}
+                  style={{
+                    padding: '0.75rem 0.5rem',
+                    borderRadius: '8px',
+                    border: metodoPagamento === 'Boleto' ? '2px solid var(--primary)' : '1px solid #cbd5e1',
+                    backgroundColor: metodoPagamento === 'Boleto' ? '#f0f9ff' : '#ffffff',
+                    fontWeight: 600,
+                    fontSize: '0.85rem',
+                    color: metodoPagamento === 'Boleto' ? 'var(--primary)' : '#475569',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                  }}
+                >
+                  <Barcode size={20} />
+                  Boleto Bancário
+                </button>
+              </div>
+            </div>
+
+            {/* Conteúdo Dinâmico por Forma de Pagamento */}
+            <form onSubmit={handleEfetuarPagamento}>
+              {metodoPagamento === 'Pix' && (
+                <div style={{ textAlign: 'center', backgroundColor: '#f8fafc', padding: '1.25rem', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'inline-flex', padding: '1rem', backgroundColor: '#ffffff', borderRadius: '12px', border: '2px dashed #cbd5e1', marginBottom: '0.75rem' }}>
+                    <QrCode size={110} color="#0f172a" />
+                  </div>
+                  <p style={{ fontSize: '0.85rem', color: '#475569', margin: '0 0 0.75rem 0' }}>
+                    Abra o app do seu banco e escaneie o QR Code ou use o código Copia e Cola:
+                  </p>
+                  <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center' }}>
+                    <input
+                      type="text"
+                      readOnly
+                      value="00020126580014BR.GOV.BCB.PIX0136heyevents-reserva-pagamento..."
+                      className="form-control"
+                      style={{ fontSize: '0.8rem', maxWidth: '320px', backgroundColor: '#ffffff' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={copiarCodigoPix}
+                      className="btn btn-sm btn-outline-primary"
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                    >
+                      {pixCopiado ? <Check size={14} color="#16a34a" /> : <Copy size={14} />}
+                      {pixCopiado ? 'Copiado!' : 'Copiar'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {metodoPagamento === 'Cartao de Credito' && (
+                <div style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '1.25rem' }}>
+                  <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+                    <label className="form-label" style={{ fontSize: '0.82rem' }}>Número do Cartão</label>
+                    <input
+                      type="text"
+                      required
+                      className="form-control"
+                      value={numCartao}
+                      onChange={(e) => setNumCartao(e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+                    <label className="form-label" style={{ fontSize: '0.82rem' }}>Nome Impresso no Cartão</label>
+                    <input
+                      type="text"
+                      required
+                      className="form-control"
+                      value={titularCartao}
+                      onChange={(e) => setTitularCartao(e.target.value)}
+                    />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div className="form-group">
+                      <label className="form-label" style={{ fontSize: '0.82rem' }}>Validade</label>
+                      <input
+                        type="text"
+                        required
+                        className="form-control"
+                        placeholder="MM/AA"
+                        value={validadeCartao}
+                        onChange={(e) => setValidadeCartao(e.target.value)}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" style={{ fontSize: '0.82rem' }}>CVV</label>
+                      <input
+                        type="text"
+                        required
+                        maxLength={4}
+                        className="form-control"
+                        placeholder="123"
+                        value={cvvCartao}
+                        onChange={(e) => setCvvCartao(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {metodoPagamento === 'Boleto' && (
+                <div style={{ textAlign: 'center', backgroundColor: '#f8fafc', padding: '1.25rem', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '1.25rem' }}>
+                  <Barcode size={64} color="#334155" style={{ margin: '0 auto 0.5rem auto' }} />
+                  <p style={{ fontSize: '0.82rem', fontFamily: 'monospace', color: '#1e293b', marginBottom: '0.5rem' }}>
+                    34191.79001 01043.510047 91020.150008 8 9876000000000
+                  </p>
+                  <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                    Vencimento: em 3 dias úteis. A confirmação ocorre automaticamente na simulação.
+                  </span>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setModalPagamento(null)}
+                  className="btn btn-secondary"
+                  disabled={processandoPagamento}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={processandoPagamento}
+                  className="btn btn-primary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                >
+                  <Lock size={15} />
+                  {processandoPagamento
+                    ? 'Confirmando...'
+                    : `Confirmar Pagamento de R$ ${Number(modalPagamento.valor_reserva || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Comprovante de Pagamento */}
+      {modalComprovante && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '1rem',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              maxWidth: '480px',
+              width: '100%',
+              padding: '2rem',
+              boxShadow: '0 15px 35px rgba(0, 0, 0, 0.25)',
+              textAlign: 'center',
+            }}
+          >
+            <div
+              style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                backgroundColor: '#dcfce7',
+                color: '#16a34a',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 1rem auto',
+              }}
+            >
+              <CheckCircle size={32} />
+            </div>
+
+            <h3 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>
+              Comprovante de Pagamento
+            </h3>
+            <span style={{ fontSize: '0.85rem', color: '#16a34a', fontWeight: 600, display: 'block', marginBottom: '1.5rem' }}>
+              Transação Aprovada com Sucesso
+            </span>
+
+            <div style={{ backgroundColor: '#f8fafc', borderRadius: '10px', padding: '1rem', border: '1px solid #e2e8f0', textAlign: 'left', fontSize: '0.88rem', display: 'grid', gap: '0.6rem', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#64748b' }}>Identificador:</span>
+                <strong>#{modalComprovante.id_pagamento}</strong>
+              </div>
+              {modalComprovante.id_reserva && (
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#64748b' }}>Reserva vinculada:</span>
+                  <strong>#{modalComprovante.id_reserva}</strong>
+                </div>
+              )}
+              {modalComprovante.nome_local && (
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#64748b' }}>Espaço:</span>
+                  <strong>{modalComprovante.nome_local}</strong>
+                </div>
+              )}
+              {modalComprovante.nome_evento && (
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#64748b' }}>Evento:</span>
+                  <strong>{modalComprovante.nome_evento}</strong>
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#64748b' }}>Método:</span>
+                <strong>{modalComprovante.metodo_pagamento}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#64748b' }}>Data e Horário:</span>
+                <strong>{formatarDataHora(modalComprovante.data_pagamento)}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #e2e8f0', paddingTop: '0.5rem' }}>
+                <span style={{ color: '#1e293b', fontWeight: 600 }}>Valor Pago:</span>
+                <strong style={{ color: 'var(--primary)', fontSize: '1.1rem' }}>
+                  R$ {Number(modalComprovante.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </strong>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setModalComprovante(null)}
+              className="btn btn-primary"
+              style={{ width: '100%', padding: '0.7rem' }}
+            >
+              Fechar Comprovante
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Exclusão */}
       {modalExcluir && (
         <div
           style={{
