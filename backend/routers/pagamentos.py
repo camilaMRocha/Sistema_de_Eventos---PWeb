@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, status
 from typing import List
 from backend.database import criar_conexao
 from backend.schemas import PagamentoCreate, PagamentoResponse
+from backend.routers.notificacoes import notificar_cliente, notificar_fornecedor
 
 router = APIRouter(prefix="/pagamentos", tags=["Pagamentos"])
 
@@ -29,6 +30,7 @@ def registrar_pagamento(dados: PagamentoCreate):
         if dados.id_reserva:
             sql_reserva = """
                 SELECT r.id_reserva, r.status_reserva, r.valor_total,
+                       l.id_fornecedor, e.id_cliente,
                        l.nome AS nome_local, e.nome_evento
                 FROM reserva r
                 JOIN local l ON r.id_local = l.id_local
@@ -76,6 +78,20 @@ def registrar_pagamento(dados: PagamentoCreate):
         ))
         id_pagamento = cursor.lastrowid
         conn.commit()
+
+        try:
+            if dados.id_reserva:
+                valor_fmt = f"R$ {float(dados.valor):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                notificar_fornecedor(
+                    reserva["id_fornecedor"],
+                    f"Pagamento de {valor_fmt} ({dados.metodo_pagamento}) recebido para a locação do '{nome_local}' no evento '{nome_evento}'."
+                )
+                notificar_cliente(
+                    reserva["id_cliente"],
+                    f"Seu pagamento de {valor_fmt} ({dados.metodo_pagamento}) para a locação do '{nome_local}' foi aprovado com sucesso!"
+                )
+        except Exception:
+            pass
 
         cursor.execute("SELECT * FROM pagamento WHERE id_pagamento = %s", (id_pagamento,))
         pagamento = cursor.fetchone()

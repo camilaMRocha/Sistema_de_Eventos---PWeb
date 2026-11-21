@@ -13,6 +13,7 @@ import MeusLocais from './pages/MeusLocais';
 import CadastroLocal from './pages/CadastroLocal';
 import ReservasRecebidas from './pages/ReservasRecebidas';
 import Reserva from './pages/Reserva';
+import Notificacoes from './pages/Notificacoes';
 
 export default function App() {
   return (
@@ -83,6 +84,16 @@ export default function App() {
               element={
                 <ProtectedRoute role="Fornecedor">
                   <CadastroLocal />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Rota Compartilhada de Notificações */}
+            <Route
+              path="/notificacoes"
+              element={
+                <ProtectedRoute>
+                  <Notificacoes />
                 </ProtectedRoute>
               }
             />

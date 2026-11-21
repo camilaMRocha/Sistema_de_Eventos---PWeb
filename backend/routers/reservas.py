@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, status
 from typing import List
 from backend.database import criar_conexao
 from backend.schemas import ReservaCreate, ReservaStatusUpdate, ReservaResponse
+from backend.routers.notificacoes import notificar_cliente, notificar_fornecedor
 
 router = APIRouter(prefix="/reservas", tags=["Reservas"])
 
@@ -75,7 +76,12 @@ def criar_reserva(dados: ReservaCreate):
             WHERE r.id_reserva = %s
         """
         cursor.execute(sql_busca, (id_reserva,))
-        return cursor.fetchone()
+        reserva_criada = cursor.fetchone()
+        try:
+            notificar_fornecedor(local["id_fornecedor"], f"Nova solicitação de reserva recebida para o espaço '{local['nome']}' para o evento '{reserva_criada['nome_evento']}'.")
+        except Exception:
+            pass
+        return reserva_criada
     except HTTPException:
         conn.rollback()
         raise
@@ -222,7 +228,7 @@ def atualizar_status_reserva(id_reserva: int, dados: ReservaStatusUpdate):
         sql = """
             SELECT r.id_reserva, r.id_evento, r.id_local, r.status_reserva,
                    r.data_hora_inicio, r.data_hora_fim, r.valor_total,
-                   ev.nome_evento, l.nome AS nome_local, l.cidade, l.estado,
+                   ev.nome_evento, ev.id_cliente, l.nome AS nome_local, l.cidade, l.estado,
                    fo.nome_fornecedor AS proprietario, fo.telefone AS contato_proprietario,
                    cli.nome AS nome_cliente, cli.telefone AS telefone_cliente, u.email AS email_cliente
             FROM reserva r
@@ -234,7 +240,19 @@ def atualizar_status_reserva(id_reserva: int, dados: ReservaStatusUpdate):
             WHERE r.id_reserva = %s
         """
         cursor.execute(sql, (id_reserva,))
-        return cursor.fetchone()
+        reserva_atualizada = cursor.fetchone()
+
+        try:
+            if dados.status_reserva == "Confirmado":
+                notificar_cliente(reserva_atualizada["id_cliente"], f"Sua reserva para o evento '{reserva_atualizada['nome_evento']}' no espaço '{reserva_atualizada['nome_local']}' foi aprovada! Efetue o pagamento para garantir a data.")
+            elif dados.status_reserva == "Cancelado":
+                notificar_cliente(reserva_atualizada["id_cliente"], f"A reserva para o evento '{reserva_atualizada['nome_evento']}' no espaço '{reserva_atualizada['nome_local']}' foi cancelada.")
+            elif dados.status_reserva == "Concluido":
+                notificar_cliente(reserva_atualizada["id_cliente"], f"O evento '{reserva_atualizada['nome_evento']}' no espaço '{reserva_atualizada['nome_local']}' foi concluído! Deixe uma avaliação sobre sua experiência.")
+        except Exception:
+            pass
+
+        return reserva_atualizada
     finally:
         cursor.close()
         conn.close()
