@@ -34,6 +34,7 @@ export default function CadastroEvento() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isConcluido, setIsConcluido] = useState(false);
 
   // Categorias
   const [tipos, setTipos] = useState([]);
@@ -90,6 +91,11 @@ export default function CadastroEvento() {
           setDescricaoEvento(ev.descricao_evento || '');
           setOrcamentoEstimado(ev.orcamento_estimado || '');
 
+          if (ev.status_reserva === 'Concluido') {
+            setIsConcluido(true);
+            setError('Este evento já foi concluído e seus dados estão arquivados para histórico. Alterações não são permitidas.');
+          }
+
           if (ev.data_hora_inicio) {
             const [d, h] = ev.data_hora_inicio.slice(0, 16).split('T');
             setDataInicio(d);
@@ -120,6 +126,11 @@ export default function CadastroEvento() {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    if (isConcluido) {
+      setError('Este evento já foi concluído e seus dados estão arquivados. Alterações não são permitidas.');
+      return;
+    }
 
     if (!dataInicio || !dataTermino) {
       setError('Por favor, preencha as datas de início e término.');
@@ -359,11 +370,11 @@ export default function CadastroEvento() {
             </Link>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || isConcluido}
               className="btn btn-primary"
             >
               <Save size={18} />
-              {loading ? 'Salvando...' : isEditing ? 'Salvar Alterações' : 'Cadastrar Evento'}
+              {loading ? 'Salvando...' : isConcluido ? 'Evento Concluído' : isEditing ? 'Salvar Alterações' : 'Cadastrar Evento'}
             </button>
           </div>
         </form>

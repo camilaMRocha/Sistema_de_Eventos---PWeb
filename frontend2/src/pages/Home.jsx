@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
-import { Search, MapPin, Users, Maximize2, Tag, Calendar, Utensils, Sparkles, Music, Camera } from 'lucide-react';
+import { Search, MapPin, Users, Maximize2, Tag, Calendar, Utensils, Sparkles, Music, Camera, Star } from 'lucide-react';
 
 function sanitizarTexto(str) {
   if (!str || typeof str !== 'string') return str || '';
@@ -206,7 +206,50 @@ export default function Home() {
                     </div>
 
                     <div className="card-body">
-                      <h3 className="card-title">{local.nome}</h3>
+                      <div className="flex items-center justify-between" style={{ marginBottom: '0.2rem' }}>
+                        <h3 className="card-title" style={{ margin: 0 }}>{local.nome}</h3>
+                        {local.total_avaliacoes > 0 ? (
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.25rem',
+                              backgroundColor: '#fef3c7',
+                              color: '#92400e',
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              fontSize: '0.82rem',
+                              fontWeight: 700,
+                            }}
+                            title={`Média de ${Number(local.nota_media).toFixed(1)} estrelas em ${local.total_avaliacoes} avaliações`}
+                          >
+                            <Star size={13} fill="#f59e0b" color="#f59e0b" />
+                            <span>{Number(local.nota_media).toFixed(1)}</span>
+                            <span style={{ fontSize: '0.72rem', fontWeight: 500, color: '#b45309' }}>
+                              ({local.total_avaliacoes})
+                            </span>
+                          </div>
+                        ) : (
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.2rem',
+                              backgroundColor: '#f1f5f9',
+                              color: '#64748b',
+                              padding: '2px 7px',
+                              borderRadius: '6px',
+                              fontSize: '0.75rem',
+                              fontWeight: 500,
+                            }}
+                            title="Espaço novo, ainda sem avaliações"
+                          >
+                            <Star size={12} color="#94a3b8" />
+                            <span>Novo</span>
+                          </div>
+                        )}
+                      </div>
+
                       <div className="card-meta">
                         <MapPin size={16} color="var(--primary)" />
                         <span>{local.cidade} / {local.estado}</span>

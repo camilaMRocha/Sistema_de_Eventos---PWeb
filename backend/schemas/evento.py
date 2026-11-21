@@ -40,6 +40,7 @@ class EventoResponse(BaseModel):
     orcamento_estimado: Optional[float] = 0.0
     fotos_urls: Optional[List[str]] = None
     local_reservado: Optional[str] = None
+    id_local: Optional[int] = None
     status_reserva: Optional[str] = None
     id_reserva: Optional[int] = None
     valor_reserva: Optional[float] = None
@@ -47,3 +48,6 @@ class EventoResponse(BaseModel):
     status_pagamento: Optional[str] = None
     metodo_pagamento: Optional[str] = None
     data_pagamento: Optional[datetime] = None
+    id_avaliacao: Optional[int] = None
+    nota_avaliacao: Optional[int] = None
+    comentario_avaliacao: Optional[str] = None

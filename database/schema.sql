@@ -237,12 +237,14 @@ CREATE TABLE IF NOT EXISTS avaliacao (
     id_cliente INT NOT NULL,
     id_local INT NULL,
     id_servico INT NULL,
+    id_reserva INT NULL,
     nota INT NOT NULL,
     comentario TEXT NULL,
     data_avaliacao DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_cliente) REFERENCES cliente(id_cliente) ON DELETE CASCADE,
     FOREIGN KEY (id_local) REFERENCES local(id_local) ON DELETE CASCADE,
-    FOREIGN KEY (id_servico) REFERENCES servico(id_servico) ON DELETE CASCADE
+    FOREIGN KEY (id_servico) REFERENCES servico(id_servico) ON DELETE CASCADE,
+    FOREIGN KEY (id_reserva) REFERENCES reserva(id_reserva) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS notificacao (

@@ -80,14 +80,16 @@ def listar_eventos_do_cliente(id_cliente: int):
     try:
         sql = """
             SELECT e.*, c.nome_categoria, p.nome_categoria AS tipo_evento,
-                   l.nome AS local_reservado, r.id_reserva, r.status_reserva, r.valor_total AS valor_reserva,
-                   pg.id_pagamento, pg.status_pagamento, pg.metodo_pagamento, pg.data_pagamento
+                   l.nome AS local_reservado, r.id_local, r.id_reserva, r.status_reserva, r.valor_total AS valor_reserva,
+                   pg.id_pagamento, pg.status_pagamento, pg.metodo_pagamento, pg.data_pagamento,
+                   av.id_avaliacao, av.nota AS nota_avaliacao, av.comentario AS comentario_avaliacao
             FROM evento e
             JOIN categoria c ON e.id_categoria = c.id_categoria
             LEFT JOIN categoria p ON c.id_categoria_pai = p.id_categoria
             LEFT JOIN reserva r ON r.id_evento = e.id_evento AND r.status_reserva <> 'Cancelado'
             LEFT JOIN local l ON r.id_local = l.id_local
             LEFT JOIN pagamento pg ON pg.id_reserva = r.id_reserva AND pg.status_pagamento = 'Aprovado'
+            LEFT JOIN avaliacao av ON av.id_reserva = r.id_reserva
             WHERE e.id_cliente = %s
             ORDER BY e.data_hora_inicio DESC
         """
@@ -115,14 +117,16 @@ def buscar_evento_por_id(id_evento: int):
     try:
         sql = """
             SELECT e.*, c.nome_categoria, p.nome_categoria AS tipo_evento,
-                   l.nome AS local_reservado, r.id_reserva, r.status_reserva, r.valor_total AS valor_reserva,
-                   pg.id_pagamento, pg.status_pagamento, pg.metodo_pagamento, pg.data_pagamento
+                   l.nome AS local_reservado, r.id_local, r.id_reserva, r.status_reserva, r.valor_total AS valor_reserva,
+                   pg.id_pagamento, pg.status_pagamento, pg.metodo_pagamento, pg.data_pagamento,
+                   av.id_avaliacao, av.nota AS nota_avaliacao, av.comentario AS comentario_avaliacao
             FROM evento e
             JOIN categoria c ON e.id_categoria = c.id_categoria
             LEFT JOIN categoria p ON c.id_categoria_pai = p.id_categoria
             LEFT JOIN reserva r ON r.id_evento = e.id_evento AND r.status_reserva <> 'Cancelado'
             LEFT JOIN local l ON r.id_local = l.id_local
             LEFT JOIN pagamento pg ON pg.id_reserva = r.id_reserva AND pg.status_pagamento = 'Aprovado'
+            LEFT JOIN avaliacao av ON av.id_reserva = r.id_reserva
             WHERE e.id_evento = %s
         """
         cursor.execute(sql, (id_evento,))
@@ -155,6 +159,17 @@ def atualizar_evento(id_evento: int, dados: EventoUpdate):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Evento não encontrado."
+            )
+
+        # Bloquear alteração de eventos que já foram concluídos
+        cursor.execute(
+            "SELECT id_reserva FROM reserva WHERE id_evento = %s AND status_reserva = 'Concluido'",
+            (id_evento,)
+        )
+        if cursor.fetchone():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Eventos já concluídos não podem ser alterados para preservação do histórico contábil."
             )
 
         campos = []
@@ -239,6 +254,17 @@ def excluir_evento(id_evento: int):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Evento não encontrado."
+            )
+
+        # Bloquear exclusão de eventos concluídos
+        cursor.execute(
+            "SELECT id_reserva FROM reserva WHERE id_evento = %s AND status_reserva = 'Concluido'",
+            (id_evento,)
+        )
+        if cursor.fetchone():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Eventos com reservas concluídas não podem ser excluídos para preservação de histórico contábil."
             )
 
         cursor.execute("DELETE FROM evento WHERE id_evento = %s", (id_evento,))

@@ -14,6 +14,7 @@ import {
   FileText,
   X,
   Lock,
+  Star,
 } from 'lucide-react';
 
 function sanitizarTexto(str) {
@@ -49,6 +50,14 @@ export default function MeusEventos() {
   const [modalExcluir, setModalExcluir] = useState(null);
   const [modalPagamento, setModalPagamento] = useState(null);
   const [modalComprovante, setModalComprovante] = useState(null);
+  const [modalAvaliacao, setModalAvaliacao] = useState(null);
+
+  // Estado da Avaliação
+  const [notaAvaliacao, setNotaAvaliacao] = useState(5);
+  const [notaHover, setNotaHover] = useState(0);
+  const [comentarioAvaliacao, setComentarioAvaliacao] = useState('');
+  const [enviandoAvaliacao, setEnviandoAvaliacao] = useState(false);
+  const [erroAvaliacao, setErroAvaliacao] = useState('');
 
   // Estado do Pagamento
   const [metodoPagamento, setMetodoPagamento] = useState('Pix');
@@ -95,6 +104,38 @@ export default function MeusEventos() {
     } catch (err) {
       setError(err.message || 'Erro ao excluir evento.');
       setModalExcluir(null);
+    }
+  };
+
+  const abrirModalAvaliacao = (ev) => {
+    setModalAvaliacao(ev);
+    setNotaAvaliacao(ev.nota_avaliacao || 5);
+    setNotaHover(0);
+    setComentarioAvaliacao(ev.comentario_avaliacao || '');
+    setErroAvaliacao('');
+  };
+
+  const salvarAvaliacao = async (e) => {
+    e.preventDefault();
+    if (!modalAvaliacao || !user?.id_perfil) return;
+    setEnviandoAvaliacao(true);
+    setErroAvaliacao('');
+    try {
+      await api.post('/avaliacoes', {
+        id_cliente: user.id_perfil,
+        id_local: modalAvaliacao.id_local,
+        id_reserva: modalAvaliacao.id_reserva,
+        nota: notaAvaliacao,
+        comentario: comentarioAvaliacao.trim() || null,
+      });
+      setMsg('Avaliação do espaço registrada com sucesso!');
+      setModalAvaliacao(null);
+      await carregarEventos();
+      setTimeout(() => setMsg(''), 4000);
+    } catch (err) {
+      setErroAvaliacao(err.message || 'Erro ao registrar avaliação.');
+    } finally {
+      setEnviandoAvaliacao(false);
     }
   };
 
@@ -431,10 +472,24 @@ export default function MeusEventos() {
                                   Pagar Reserva
                                 </button>
                               </div>
-                            ) : (
+                            ) : !isConcluido ? (
                               <span style={{ color: '#64748b', fontSize: '0.82rem' }}>
                                 O pagamento será liberado assim que o fornecedor aprovar o pedido.
                               </span>
+                            ) : null}
+
+                            {ev.id_avaliacao && (
+                              <div style={{ marginTop: '0.6rem', backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '6px', padding: '0.45rem 0.75rem', fontSize: '0.85rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 700, color: '#92400e' }}>
+                                  <Star size={14} fill="#f59e0b" color="#f59e0b" />
+                                  <span>Sua Avaliação: {ev.nota_avaliacao} de 5 estrelas</span>
+                                </div>
+                                {ev.comentario_avaliacao && (
+                                  <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.82rem', color: '#78350f', fontStyle: 'italic' }}>
+                                    "{ev.comentario_avaliacao}"
+                                  </p>
+                                )}
+                              </div>
                             )}
                           </div>
                         </div>
@@ -461,37 +516,63 @@ export default function MeusEventos() {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', minWidth: '110px' }}>
-                    <Link to={`/eventos/editar/${ev.id_evento}`} className="btn-teal">
-                      Editar
-                    </Link>
-
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', minWidth: '120px' }}>
                     {isConcluido ? (
-                      <button
-                        type="button"
-                        disabled
-                        title="Eventos concluídos não podem ser excluídos para preservação de histórico contábil."
-                        style={{
-                          backgroundColor: '#e2e8f0',
-                          color: '#94a3b8',
-                          border: 'none',
-                          padding: '8px 22px',
-                          borderRadius: '8px',
-                          fontSize: '0.85rem',
-                          fontWeight: 600,
-                          cursor: 'not-allowed',
-                        }}
-                      >
-                        Concluído
-                      </button>
+                      <>
+                        {ev.id_local && (
+                          <button
+                            type="button"
+                            onClick={() => abrirModalAvaliacao(ev)}
+                            style={{
+                              backgroundColor: ev.id_avaliacao ? '#fef3c7' : '#f59e0b',
+                              color: ev.id_avaliacao ? '#92400e' : '#ffffff',
+                              border: ev.id_avaliacao ? '1px solid #fde68a' : 'none',
+                              padding: '8px 14px',
+                              borderRadius: '8px',
+                              fontSize: '0.85rem',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '0.35rem',
+                            }}
+                            title={ev.id_avaliacao ? 'Editar sua avaliação deste espaço' : 'Avaliar o espaço onde foi realizado seu evento'}
+                          >
+                            <Star size={14} fill={ev.id_avaliacao ? '#f59e0b' : '#ffffff'} color={ev.id_avaliacao ? '#f59e0b' : '#ffffff'} />
+                            {ev.id_avaliacao ? 'Editar Avaliação' : 'Avaliar Espaço'}
+                          </button>
+                        )}
+                        <span
+                          style={{
+                            backgroundColor: '#f1f5f9',
+                            color: '#64748b',
+                            border: '1px solid #e2e8f0',
+                            padding: '6px 14px',
+                            borderRadius: '8px',
+                            fontSize: '0.8rem',
+                            fontWeight: 600,
+                            textAlign: 'center',
+                            cursor: 'default',
+                          }}
+                          title="Evento realizado. Dados e histórico arquivados."
+                        >
+                          Evento Concluído
+                        </span>
+                      </>
                     ) : (
-                      <button
-                        type="button"
-                        onClick={() => abrirModalExcluir(ev)}
-                        className="btn-coral"
-                      >
-                        Excluir
-                      </button>
+                      <>
+                        <Link to={`/eventos/editar/${ev.id_evento}`} className="btn-teal">
+                          Editar
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => abrirModalExcluir(ev)}
+                          className="btn-coral"
+                        >
+                          Excluir
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -925,6 +1006,161 @@ export default function MeusEventos() {
                 Excluir evento
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Avaliação do Espaço */}
+      {modalAvaliacao && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '1rem',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              maxWidth: '500px',
+              width: '100%',
+              padding: '2rem',
+              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.25)',
+              position: 'relative',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setModalAvaliacao(null)}
+              style={{
+                position: 'absolute',
+                top: '1rem',
+                right: '1rem',
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                color: '#64748b',
+              }}
+            >
+              <X size={20} />
+            </button>
+
+            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '54px',
+                  height: '54px',
+                  borderRadius: '50%',
+                  backgroundColor: '#fef3c7',
+                  color: '#f59e0b',
+                  marginBottom: '0.75rem',
+                }}
+              >
+                <Star size={28} fill="#f59e0b" />
+              </div>
+              <h3 style={{ fontSize: '1.35rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.35rem' }}>
+                {modalAvaliacao.id_avaliacao ? 'Editar Avaliação' : 'Avaliar Espaço'}
+              </h3>
+              <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0 }}>
+                {modalAvaliacao.local_reservado || 'Espaço de Eventos'}
+              </p>
+              <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginTop: '0.2rem' }}>
+                Evento: {modalAvaliacao.nome_evento}
+              </p>
+            </div>
+
+            {erroAvaliacao && (
+              <div className="alert alert-danger" style={{ marginBottom: '1.25rem', fontSize: '0.88rem' }}>
+                <AlertCircle size={16} />
+                <span>{erroAvaliacao}</span>
+              </div>
+            )}
+
+            <form onSubmit={salvarAvaliacao}>
+              <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 600, color: '#334155', marginBottom: '0.6rem' }}>
+                  Como foi sua experiência no local?
+                </label>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                  {[1, 2, 3, 4, 5].map((estrela) => {
+                    const ativa = (notaHover || notaAvaliacao) >= estrela;
+                    return (
+                      <button
+                        key={estrela}
+                        type="button"
+                        onClick={() => setNotaAvaliacao(estrela)}
+                        onMouseEnter={() => setNotaHover(estrela)}
+                        onMouseLeave={() => setNotaHover(0)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: '0.2rem',
+                          transform: ativa ? 'scale(1.15)' : 'scale(1)',
+                          transition: 'transform 0.15s ease',
+                        }}
+                        title={`${estrela} estrela${estrela > 1 ? 's' : ''}`}
+                      >
+                        <Star
+                          size={32}
+                          fill={ativa ? '#f59e0b' : '#e2e8f0'}
+                          color={ativa ? '#f59e0b' : '#cbd5e1'}
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#b45309' }}>
+                  {notaAvaliacao === 1 && '1 estrela - Muito insatisfeito'}
+                  {notaAvaliacao === 2 && '2 estrelas - Abaixo do esperado'}
+                  {notaAvaliacao === 3 && '3 estrelas - Atendeu ao básico'}
+                  {notaAvaliacao === 4 && '4 estrelas - Muito bom'}
+                  {notaAvaliacao === 5 && '5 estrelas - Excelente! Super recomendado'}
+                </span>
+              </div>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label className="form-label" style={{ fontSize: '0.88rem', fontWeight: 600 }}>
+                  Depoimento ou Comentário (opcional)
+                </label>
+                <textarea
+                  className="form-control"
+                  rows={4}
+                  placeholder="Escreva detalhes sobre o atendimento, limpeza, infraestrutura, pontos positivos e dicas para futuros clientes..."
+                  value={comentarioAvaliacao}
+                  onChange={(e) => setComentarioAvaliacao(e.target.value)}
+                  style={{ resize: 'vertical' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => setModalAvaliacao(null)}
+                  className="btn btn-secondary"
+                  disabled={enviandoAvaliacao}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={enviandoAvaliacao}
+                  style={{ minWidth: '150px' }}
+                >
+                  {enviandoAvaliacao ? 'Enviando...' : 'Salvar Avaliação'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

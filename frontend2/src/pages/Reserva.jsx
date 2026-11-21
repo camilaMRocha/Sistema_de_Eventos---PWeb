@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
-import { Calendar, MapPin, DollarSign, Clock, Users, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, Clock, Users, AlertCircle, CheckCircle, ArrowLeft, Star } from 'lucide-react';
 
 export default function Reserva() {
   const { id_local } = useParams();
@@ -171,7 +171,7 @@ export default function Reserva() {
             </span>
           </div>
 
-          <div className="flex items-center gap-4" style={{ fontSize: '0.88rem', color: '#475569' }}>
+          <div className="flex items-center gap-4" style={{ fontSize: '0.88rem', color: '#475569', flexWrap: 'wrap' }}>
             <span className="flex items-center gap-1">
               <MapPin size={15} />
               {local.cidade} / {local.estado}
@@ -180,6 +180,17 @@ export default function Reserva() {
               <Users size={15} />
               Até {local.capacidade} pessoas
             </span>
+            {local.total_avaliacoes > 0 ? (
+              <span className="flex items-center gap-1" style={{ color: '#b45309', fontWeight: 600 }}>
+                <Star size={14} fill="#f59e0b" color="#f59e0b" />
+                {Number(local.nota_media).toFixed(1)} ({local.total_avaliacoes} {local.total_avaliacoes === 1 ? 'avaliação' : 'avaliações'})
+              </span>
+            ) : (
+              <span className="flex items-center gap-1" style={{ color: '#64748b' }}>
+                <Star size={14} color="#94a3b8" />
+                Sem avaliações ainda
+              </span>
+            )}
             {local.proprietario && (
               <span>Proprietário: <strong>{local.proprietario}</strong></span>
             )}
