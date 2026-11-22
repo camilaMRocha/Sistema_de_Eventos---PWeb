@@ -17,11 +17,9 @@ def verificar_senha(senha_pura: str, hash_armazenado: str) -> bool:
     if not hash_armazenado:
         return False
 
-    # Suporte para hash com salt: salt$hash
     if "$" in hash_armazenado:
         salt, hash_real = hash_armazenado.split("$", 1)
         hash_calculado = hashlib.sha256((senha_pura + salt).encode("utf-8")).hexdigest()
         return secrets.compare_digest(hash_calculado, hash_real)
 
-    # Suporte transitório para senhas antigas em texto plano
     return secrets.compare_digest(senha_pura, hash_armazenado)

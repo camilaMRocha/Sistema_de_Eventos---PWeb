@@ -42,5 +42,11 @@ venv/
 .DS_Store
 Thumbs.db
 
+# Node / Frontend
+node_modules/
+dist/
+.vite/
+frontend2/
+
 # Arquivos locais / temporários
 projeto.txt

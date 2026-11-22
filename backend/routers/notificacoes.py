@@ -1,12 +1,10 @@
-from fastapi import APIRouter, HTTPException, status
-from typing import List, Optional
-from datetime import datetime
+from fastapi import APIRouter, status
+from typing import List
 from backend.database import criar_conexao
 from backend.schemas.notificacao import NotificacaoCreate, NotificacaoResponse
 
 router = APIRouter(prefix="/notificacoes", tags=["Notificações"])
 
-# Funções utilitárias internas para disparos automáticos do sistema
 
 def enviar_notificacao_usuario(id_usuario: int, mensagem: str):
     """Grava uma notificação para um usuário específico."""
@@ -63,7 +61,6 @@ def notificar_fornecedor(id_fornecedor: int, mensagem: str):
         conn.close()
 
 
-# Rotas da API
 
 @router.get("/pendentes/{id_usuario}", response_model=List[NotificacaoResponse])
 def listar_notificacoes_pendentes(id_usuario: int):

@@ -1,6 +1,5 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.core.config import settings
@@ -23,7 +22,6 @@ from backend.routers import (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Repara automaticamente acentuação UTF-8 em categorias caso o banco tenha sido importado com codificação legada
     try:
         from backend.database import criar_conexao
         conn = criar_conexao()
@@ -68,7 +66,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Configuração de CORS para permitir requisições do front-end (React / Vite, etc.)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
@@ -76,8 +73,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-app.mount("/frontend", StaticFiles(directory="frontend"), name="frontend")
 
 app.include_router(paginas.router)
 app.include_router(auth.router)

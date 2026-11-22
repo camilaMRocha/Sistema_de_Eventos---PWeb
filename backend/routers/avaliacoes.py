@@ -13,14 +13,12 @@ def registrar_avaliacao(dados: AvaliacaoCreate):
     - RN09 (Exclusividade): Avaliação deve apontar para um local OU serviço, nunca ambos ou nenhum.
     - RN07 (Avaliação Pós-Evento): O cliente só pode avaliar se tiver uma reserva com status 'Concluido'.
     """
-    # Validação RN09: exclusividade do alvo
     if (dados.id_local is None and dados.id_servico is None) or (dados.id_local is not None and dados.id_servico is not None):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="A avaliação deve referenciar exatamente um alvo: ou um local ou um serviço (RN09)."
         )
 
-    # Validação da nota (1 a 5)
     if dados.nota < 1 or dados.nota > 5:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -30,7 +28,6 @@ def registrar_avaliacao(dados: AvaliacaoCreate):
     conn = criar_conexao()
     cursor = conn.cursor(dictionary=True)
     try:
-        # Verificar se o cliente existe
         cursor.execute("SELECT nome FROM cliente WHERE id_cliente = %s", (dados.id_cliente,))
         cli = cursor.fetchone()
         if not cli:
@@ -42,7 +39,6 @@ def registrar_avaliacao(dados: AvaliacaoCreate):
 
         id_reserva_alvo = dados.id_reserva
 
-        # Se id_reserva for fornecido diretamente
         if id_reserva_alvo is not None:
             cursor.execute("""
                 SELECT r.id_reserva, r.id_local, r.status_reserva, e.id_cliente
@@ -69,7 +65,6 @@ def registrar_avaliacao(dados: AvaliacaoCreate):
 
             id_local_efetivo = dados.id_local or res_info["id_local"]
 
-            # Verificar se já existe avaliação para esta reserva específica (upsert por reserva)
             cursor.execute(
                 "SELECT id_avaliacao FROM avaliacao WHERE id_reserva = %s",
                 (id_reserva_alvo,)
@@ -90,7 +85,6 @@ def registrar_avaliacao(dados: AvaliacaoCreate):
                 id_avaliacao = cursor.lastrowid
 
         elif dados.id_local is not None:
-            # Caso não tenha enviado id_reserva explicitamente, busca a reserva concluída mais recente
             sql_check = """
                 SELECT r.id_reserva
                 FROM reserva r
@@ -167,7 +161,6 @@ def registrar_avaliacao(dados: AvaliacaoCreate):
 
         conn.commit()
 
-        # Obter registro recém-gravado
         cursor.execute("SELECT * FROM avaliacao WHERE id_avaliacao = %s", (id_avaliacao,))
         row = cursor.fetchone()
 

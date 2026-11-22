@@ -161,7 +161,6 @@ def atualizar_evento(id_evento: int, dados: EventoUpdate):
                 detail="Evento não encontrado."
             )
 
-        # Bloquear alteração de eventos que já foram concluídos
         cursor.execute(
             "SELECT id_reserva FROM reserva WHERE id_evento = %s AND status_reserva = 'Concluido'",
             (id_evento,)
@@ -256,7 +255,6 @@ def excluir_evento(id_evento: int):
                 detail="Evento não encontrado."
             )
 
-        # Bloquear exclusão de eventos concluídos
         cursor.execute(
             "SELECT id_reserva FROM reserva WHERE id_evento = %s AND status_reserva = 'Concluido'",
             (id_evento,)
