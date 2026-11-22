@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 from backend.database import criar_conexao
+from backend.core.security import verificar_senha
 from backend.schemas import LoginRequest
 
 router = APIRouter(tags=["Autenticação"])
@@ -18,7 +19,7 @@ def autenticar_usuario(dados: LoginRequest):
         cursor.execute(sql_usuario, (dados.email,))
         usuario = cursor.fetchone()
 
-        if not usuario or usuario["senha"] != dados.senha:
+        if not usuario or not verificar_senha(dados.senha, usuario["senha"]):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="E-mail ou senha incorretos."
@@ -44,6 +45,18 @@ def autenticar_usuario(dados: LoginRequest):
             if fornecedor:
                 resposta["id_perfil"] = fornecedor["id_fornecedor"]
                 resposta["nome"] = fornecedor["nome_fornecedor"]
+
+        elif usuario["tipo_usuario"] == "Administrador":
+            cursor.execute("SELECT id_administrador, nome, nivel_acesso FROM administrador WHERE id_usuario = %s", (usuario["id_usuario"],))
+            admin = cursor.fetchone()
+            if admin:
+                resposta["id_perfil"] = admin["id_administrador"]
+                resposta["nome"] = admin["nome"]
+                resposta["nivel_acesso"] = admin.get("nivel_acesso", "Geral")
+            else:
+                resposta["id_perfil"] = usuario["id_usuario"]
+                resposta["nome"] = "admin"
+                resposta["nivel_acesso"] = "Geral"
 
         return resposta
     finally:

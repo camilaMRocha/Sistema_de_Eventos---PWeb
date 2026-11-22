@@ -554,3 +554,14 @@ BEGIN
 END //
 DELIMITER ;
 
+INSERT INTO usuario (email, senha, tipo_usuario)
+SELECT 'admin', 'pl1914', 'Administrador'
+WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE email = 'admin');
+
+INSERT INTO administrador (id_usuario, nome, nivel_acesso)
+SELECT id_usuario, 'admin', 'Geral'
+FROM usuario
+WHERE email = 'admin'
+  AND NOT EXISTS (SELECT 1 FROM administrador a JOIN usuario u ON a.id_usuario = u.id_usuario WHERE u.email = 'admin');
+
+

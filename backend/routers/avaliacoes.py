@@ -220,9 +220,9 @@ def buscar_avaliacao_cliente_local(id_local: int, id_cliente: int):
         cursor.close()
         conn.close()
 
-@router.get("/cliente/{id_cliente}", response_model=List[AvaliacaoResponse])
-def listar_avaliacoes_do_cliente(id_cliente: int):
-    """Retorna todas as avaliações feitas por um determinado cliente."""
+@router.get("", response_model=List[AvaliacaoResponse])
+def listar_todas_avaliacoes():
+    """Retorna todas as avaliações registradas na plataforma."""
     conn = criar_conexao()
     cursor = conn.cursor(dictionary=True)
     try:
@@ -231,11 +231,48 @@ def listar_avaliacoes_do_cliente(id_cliente: int):
                    a.id_local, a.id_servico, a.id_reserva, a.nota, a.comentario, a.data_avaliacao
             FROM avaliacao a
             JOIN cliente c ON a.id_cliente = c.id_cliente
-            WHERE a.id_cliente = %s
             ORDER BY a.data_avaliacao DESC
         """
-        cursor.execute(sql, (id_cliente,))
+        cursor.execute(sql)
         return cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
+@router.put("/{id_avaliacao}/moderar-comentario", status_code=status.HTTP_200_OK)
+def moderar_comentario_avaliacao(id_avaliacao: int):
+    """
+    Remove o texto do comentário de uma avaliação (moderação administrativa),
+    preservando a nota (estrelas).
+    """
+    conn = criar_conexao()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT id_avaliacao, comentario, id_cliente FROM avaliacao WHERE id_avaliacao = %s", (id_avaliacao,))
+        av = cursor.fetchone()
+        if not av:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Avaliação não encontrada."
+            )
+
+        cursor.execute("""
+            UPDATE avaliacao
+            SET comentario = NULL
+            WHERE id_avaliacao = %s
+        """, (id_avaliacao,))
+        conn.commit()
+
+        try:
+            from backend.routers.notificacoes import notificar_cliente
+            notificar_cliente(
+                av["id_cliente"],
+                "O comentário da sua avaliação foi removido pela administração da plataforma."
+            )
+        except Exception:
+            pass
+
+        return {"mensagem": "Comentário removido com sucesso.", "id_avaliacao": id_avaliacao}
     finally:
         cursor.close()
         conn.close()

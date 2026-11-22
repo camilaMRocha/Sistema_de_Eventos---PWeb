@@ -14,6 +14,7 @@ import CadastroLocal from './pages/CadastroLocal';
 import ReservasRecebidas from './pages/ReservasRecebidas';
 import Reserva from './pages/Reserva';
 import Notificacoes from './pages/Notificacoes';
+import Moderacao from './pages/Moderacao';
 
 export default function App() {
   return (
@@ -90,6 +91,15 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <Notificacoes />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/moderacao"
+              element={
+                <ProtectedRoute role="Administrador">
+                  <Moderacao />
                 </ProtectedRoute>
               }
             />

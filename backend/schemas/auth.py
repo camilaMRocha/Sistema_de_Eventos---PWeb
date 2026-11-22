@@ -3,7 +3,7 @@ from typing import Optional
 from datetime import datetime
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: str
     senha: str
 
 class UsuarioResponse(BaseModel):

@@ -24,6 +24,8 @@ export default function Login() {
 
       if (data.tipo_usuario === 'Fornecedor') {
         navigate('/meus-locais');
+      } else if (data.tipo_usuario === 'Administrador') {
+        navigate('/moderacao');
       } else {
         navigate('/meus-eventos');
       }
@@ -55,9 +57,9 @@ export default function Login() {
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">E-mail do usuário</label>
+            <label className="form-label">E-mail</label>
             <input
-              type="email"
+              type="text"
               required
               className="form-control"
               placeholder="exemplo@gmail.com"

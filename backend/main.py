@@ -52,6 +52,22 @@ async def lifespan(app: FastAPI):
             SET nome_categoria = 'Exposição'
             WHERE id_categoria = 18 AND (nome_categoria LIKE '%├%' OR nome_categoria LIKE '%Ã%');
         """)
+
+        cursor.execute("SELECT id_usuario FROM usuario WHERE email = 'admin'")
+        admin_user = cursor.fetchone()
+        if not admin_user:
+            from backend.core.security import gerar_hash_senha
+            senha_hash = gerar_hash_senha("pl1914")
+            cursor.execute("""
+                INSERT INTO usuario (email, senha, tipo_usuario)
+                VALUES ('admin', %s, 'Administrador')
+            """, (senha_hash,))
+            id_usuario_admin = cursor.lastrowid
+            cursor.execute("""
+                INSERT INTO administrador (id_usuario, nome, nivel_acesso)
+                VALUES (%s, 'admin', 'Geral')
+            """, (id_usuario_admin,))
+
         conn.commit()
         cursor.close()
         conn.close()

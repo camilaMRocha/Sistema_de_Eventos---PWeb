@@ -16,10 +16,11 @@ import {
   Check,
   CheckCheck,
   Clock,
+  ShieldCheck,
 } from 'lucide-react';
 
 export default function Navbar() {
-  const { user, isAuthenticated, isCliente, isFornecedor, logout } = useAuth();
+  const { user, isAuthenticated, isCliente, isFornecedor, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
 
   const [contadorNotif, setContadorNotif] = useState(0);
@@ -189,6 +190,18 @@ export default function Navbar() {
                     </NavLink>
                   </li>
                 </>
+              )}
+
+              {isAdmin && (
+                <li>
+                  <NavLink
+                    to="/moderacao"
+                    className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                  >
+                    <ShieldCheck size={18} />
+                    Administração
+                  </NavLink>
+                </li>
               )}
 
               <li ref={dropdownRef} style={{ position: 'relative' }}>

@@ -24,6 +24,7 @@ export function AuthProvider({ children }) {
 
   const isCliente = user?.tipo_usuario === 'Cliente';
   const isFornecedor = user?.tipo_usuario === 'Fornecedor';
+  const isAdmin = user?.tipo_usuario === 'Administrador';
   const isAuthenticated = !!user;
 
   return (
@@ -35,6 +36,7 @@ export function AuthProvider({ children }) {
         isAuthenticated,
         isCliente,
         isFornecedor,
+        isAdmin,
       }}
     >
       {children}
