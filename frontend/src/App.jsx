@@ -15,6 +15,7 @@ import ReservasRecebidas from './pages/ReservasRecebidas';
 import Reserva from './pages/Reserva';
 import Notificacoes from './pages/Notificacoes';
 import Moderacao from './pages/Moderacao';
+import MeusIngressos from './pages/MeusIngressos';
 
 export default function App() {
   return (
@@ -33,6 +34,14 @@ export default function App() {
               element={
                 <ProtectedRoute role="Cliente">
                   <MeusEventos />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/meus-ingressos"
+              element={
+                <ProtectedRoute role="Cliente">
+                  <MeusIngressos />
                 </ProtectedRoute>
               }
             />

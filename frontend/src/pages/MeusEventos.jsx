@@ -15,6 +15,9 @@ import {
   X,
   Lock,
   Star,
+  Ticket,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 
 function sanitizarTexto(str) {
@@ -66,6 +69,17 @@ export default function MeusEventos() {
   const [titularCartao, setTitularCartao] = useState('CLIENTE HEYEVENTS');
   const [validadeCartao, setValidadeCartao] = useState('12/28');
   const [cvvCartao, setCvvCartao] = useState('123');
+
+  const [modalIngressos, setModalIngressos] = useState(null);
+  const [lotesIngressos, setLotesIngressos] = useState([]);
+  const [loadingLotes, setLoadingLotes] = useState(false);
+  const [novoTituloIngresso, setNovoTituloIngresso] = useState('Entrada Geral');
+  const [novoTipoIngresso, setNovoTipoIngresso] = useState('Pago');
+  const [novoPrecoIngresso, setNovoPrecoIngresso] = useState('50.00');
+  const [novaQtdIngresso, setNovaQtdIngresso] = useState('100');
+  const [salvandoIngresso, setSalvandoIngresso] = useState(false);
+  const [erroIngresso, setErroIngresso] = useState('');
+  const [sucessoIngresso, setSucessoIngresso] = useState('');
 
   const carregarEventos = async () => {
     if (!user?.id_perfil) return;
@@ -202,6 +216,63 @@ export default function MeusEventos() {
     navigator.clipboard.writeText(mockHash);
     setPixCopiado(true);
     setTimeout(() => setPixCopiado(false), 3000);
+  };
+
+  const abrirModalIngressos = async (evento) => {
+    setModalIngressos(evento);
+    setErroIngresso('');
+    setSucessoIngresso('');
+    setNovoTituloIngresso('Entrada Geral');
+    setNovoTipoIngresso('Pago');
+    setNovoPrecoIngresso('50.00');
+    setNovaQtdIngresso('100');
+    await carregarLotesIngressos(evento.id_evento);
+  };
+
+  const carregarLotesIngressos = async (idEvento) => {
+    setLoadingLotes(true);
+    try {
+      const data = await api.get(`/ingressos/evento/${idEvento}`);
+      setLotesIngressos(data);
+    } catch (err) {
+      setErroIngresso(err.message || 'Erro ao carregar lotes de ingressos.');
+    } finally {
+      setLoadingLotes(false);
+    }
+  };
+
+  const handleCriarIngresso = async (e) => {
+    e.preventDefault();
+    if (!modalIngressos) return;
+    setSalvandoIngresso(true);
+    setErroIngresso('');
+    setSucessoIngresso('');
+    try {
+      await api.post('/ingressos', {
+        id_evento: modalIngressos.id_evento,
+        tipo_ingresso: novoTipoIngresso,
+        titulo_ingresso: novoTituloIngresso,
+        preco: novoTipoIngresso === 'Gratuito' ? 0 : parseFloat(novoPrecoIngresso),
+        quantidade_total: parseInt(novaQtdIngresso, 10),
+      });
+      setSucessoIngresso('Lote de ingressos criado com sucesso!');
+      await carregarLotesIngressos(modalIngressos.id_evento);
+    } catch (err) {
+      setErroIngresso(err.message || 'Erro ao cadastrar lote de ingressos.');
+    } finally {
+      setSalvandoIngresso(false);
+    }
+  };
+
+  const handleExcluirIngresso = async (idIngresso) => {
+    if (!window.confirm('Deseja realmente remover este lote de ingressos?')) return;
+    try {
+      await api.delete(`/ingressos/${idIngresso}`);
+      setSucessoIngresso('Lote removido com sucesso!');
+      await carregarLotesIngressos(modalIngressos.id_evento);
+    } catch (err) {
+      setErroIngresso(err.message || 'Erro ao remover lote.');
+    }
   };
 
   const formatarDataHora = (isoString) => {
@@ -556,6 +627,28 @@ export default function MeusEventos() {
                       </>
                     ) : (
                       <>
+                        <button
+                          type="button"
+                          onClick={() => abrirModalIngressos(ev)}
+                          style={{
+                            backgroundColor: '#0ea5e9',
+                            color: '#ffffff',
+                            border: 'none',
+                            padding: '8px 14px',
+                            borderRadius: '8px',
+                            fontSize: '0.85rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.35rem',
+                          }}
+                          title="Gerenciar lotes de ingressos deste evento"
+                        >
+                          <Ticket size={14} />
+                          Ingressos
+                        </button>
                         <Link to={`/eventos/editar/${ev.id_evento}`} className="btn-teal">
                           Editar
                         </Link>
@@ -1147,6 +1240,247 @@ export default function MeusEventos() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {modalIngressos && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '1rem',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              maxWidth: '680px',
+              width: '100%',
+              padding: '1.75rem',
+              boxShadow: '0 15px 35px rgba(0, 0, 0, 0.25)',
+              position: 'relative',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1.25rem' }}>
+              <div>
+                <h3 style={{ fontSize: '1.25rem', color: 'var(--secondary)', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Ticket size={22} color="var(--primary)" />
+                  Lotes de Ingressos
+                </h3>
+                <span style={{ fontSize: '0.88rem', color: '#64748b' }}>
+                  {modalIngressos.nome_evento}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalIngressos(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {erroIngresso && (
+              <div style={{ backgroundColor: '#fee2e2', border: '1px solid #fca5a5', color: '#991b1b', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.88rem' }}>
+                <AlertCircle size={18} />
+                <span>{erroIngresso}</span>
+              </div>
+            )}
+
+            {sucessoIngresso && (
+              <div style={{ backgroundColor: '#dcfce7', border: '1px solid #86efac', color: '#166534', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.88rem' }}>
+                <CheckCircle size={18} />
+                <span>{sucessoIngresso}</span>
+              </div>
+            )}
+
+            <div style={{ marginBottom: '1.75rem' }}>
+              <h4 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.75rem' }}>
+                Lotes Atuais
+              </h4>
+
+              {loadingLotes ? (
+                <p style={{ color: '#64748b', fontSize: '0.88rem' }}>Carregando lotes...</p>
+              ) : lotesIngressos.length === 0 ? (
+                <div style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px dashed #cbd5e1', textAlign: 'center', color: '#64748b', fontSize: '0.88rem' }}>
+                  Nenhum lote de ingressos cadastrado para este evento.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  {lotesIngressos.map((lote) => {
+                    const precoFormatado = Number(lote.preco) === 0
+                      ? 'Gratuito'
+                      : Number(lote.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    const vendidos = lote.quantidade_vendida || 0;
+                    const disponiveis = lote.quantidade_disponivel !== undefined ? lote.quantidade_disponivel : lote.quantidade_total - vendidos;
+
+                    return (
+                      <div
+                        key={lote.id_ingresso}
+                        style={{
+                          backgroundColor: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          padding: '0.85rem 1rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '1rem',
+                        }}
+                      >
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <strong style={{ color: '#1e293b', fontSize: '0.95rem' }}>{lote.titulo_ingresso || lote.titulo}</strong>
+                            <span
+                              style={{
+                                backgroundColor: lote.tipo_ingresso === 'Gratuito' ? '#dcfce7' : '#e0f2fe',
+                                color: lote.tipo_ingresso === 'Gratuito' ? '#166534' : '#0369a1',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                padding: '0.15rem 0.5rem',
+                                borderRadius: '4px',
+                              }}
+                            >
+                              {lote.tipo_ingresso}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '0.2rem' }}>
+                            Preço: <strong style={{ color: '#16a34a' }}>{precoFormatado}</strong> &bull; Total: {lote.quantidade_total} &bull; Vendidos: {vendidos} &bull; Restantes: {disponiveis}
+                          </div>
+                        </div>
+
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() => handleExcluirIngresso(lote.id_ingresso)}
+                            style={{
+                              backgroundColor: '#fee2e2',
+                              color: '#ef4444',
+                              border: '1px solid #fca5a5',
+                              padding: '6px 10px',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                              fontSize: '0.8rem',
+                              fontWeight: 600,
+                            }}
+                            title="Remover lote de ingressos"
+                          >
+                            <Trash2 size={14} />
+                            Excluir
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div style={{ backgroundColor: '#f1f5f9', padding: '1.25rem', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
+              <h4 style={{ fontSize: '0.98rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <Plus size={18} color="var(--primary)" />
+                Criar Novo Lote de Ingressos
+              </h4>
+
+              <form onSubmit={handleCriarIngresso}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                  <div>
+                    <label className="form-label" style={{ fontSize: '0.82rem', fontWeight: 600 }}>Título do Lote</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={novoTituloIngresso}
+                      onChange={(e) => setNovoTituloIngresso(e.target.value)}
+                      required
+                      placeholder="Ex: 1º Lote - Pista"
+                      style={{ fontSize: '0.88rem' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="form-label" style={{ fontSize: '0.82rem', fontWeight: 600 }}>Tipo de Ingresso</label>
+                    <select
+                      className="form-control"
+                      value={novoTipoIngresso}
+                      onChange={(e) => {
+                        const tipo = e.target.value;
+                        setNovoTipoIngresso(tipo);
+                        if (tipo === 'Gratuito') setNovoPrecoIngresso('0.00');
+                      }}
+                      style={{ fontSize: '0.88rem' }}
+                    >
+                      <option value="Pago">Pago</option>
+                      <option value="Gratuito">Gratuito</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                  <div>
+                    <label className="form-label" style={{ fontSize: '0.82rem', fontWeight: 600 }}>Preço Unitário (R$)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="form-control"
+                      value={novoPrecoIngresso}
+                      onChange={(e) => setNovoPrecoIngresso(e.target.value)}
+                      disabled={novoTipoIngresso === 'Gratuito'}
+                      required
+                      style={{ fontSize: '0.88rem' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="form-label" style={{ fontSize: '0.82rem', fontWeight: 600 }}>Quantidade Total de Ingressos</label>
+                    <input
+                      type="number"
+                      min="1"
+                      className="form-control"
+                      value={novaQtdIngresso}
+                      onChange={(e) => setNovaQtdIngresso(e.target.value)}
+                      required
+                      style={{ fontSize: '0.88rem' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={salvandoIngresso}
+                    style={{ fontSize: '0.88rem', padding: '0.5rem 1.25rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                  >
+                    <Plus size={16} />
+                    {salvandoIngresso ? 'Criando...' : 'Cadastrar Lote'}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <div style={{ marginTop: '1.25rem', textAlign: 'right' }}>
+              <button
+                type="button"
+                onClick={() => setModalIngressos(null)}
+                className="btn btn-secondary"
+                style={{ fontSize: '0.88rem', padding: '0.45rem 1.25rem' }}
+              >
+                Fechar
+              </button>
+            </div>
           </div>
         </div>
       )}

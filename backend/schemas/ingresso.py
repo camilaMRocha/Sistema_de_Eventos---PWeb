@@ -8,8 +8,8 @@ class IngressoCreate(BaseModel):
     tipo_ingresso: Literal["Gratuito", "Pago"] = "Pago"
     preco: Optional[float] = 0.0
     quantidade_total: int
-    data_hora_inicio_vendas: datetime
-    data_hora_termino_vendas: datetime
+    data_hora_inicio_vendas: Optional[datetime] = None
+    data_hora_termino_vendas: Optional[datetime] = None
     quem_pode_comprar: Optional[str] = "Qualquer pessoa"
     permite_troca_titularidade: Optional[bool] = True
     quantidade_min_compra: Optional[int] = 1
@@ -22,8 +22,11 @@ class IngressoResponse(BaseModel):
     tipo_ingresso: str
     preco: Optional[float] = 0.0
     quantidade_total: int
-    data_hora_inicio_vendas: datetime
-    data_hora_termino_vendas: datetime
+    quantidade_vendida: Optional[int] = 0
+    quantidade_disponivel: Optional[int] = 0
+    status_estoque: Optional[str] = "Disponivel"
+    data_hora_inicio_vendas: Optional[datetime] = None
+    data_hora_termino_vendas: Optional[datetime] = None
     quem_pode_comprar: Optional[str] = "Qualquer pessoa"
     permite_troca_titularidade: Optional[bool] = True
     quantidade_min_compra: Optional[int] = 1
@@ -33,6 +36,7 @@ class IngressoCompraCreate(BaseModel):
     id_ingresso: int
     id_cliente: int
     quantidade: int
+    metodo_pagamento: Optional[str] = "Pix"
 
 class IngressoVendaResponse(BaseModel):
     id_venda: int
@@ -42,3 +46,7 @@ class IngressoVendaResponse(BaseModel):
     valor_total: float
     data_compra: Optional[datetime] = None
     codigo_ingresso: str
+    nome_evento: Optional[str] = None
+    titulo_ingresso: Optional[str] = None
+    data_hora_inicio: Optional[datetime] = None
+    local_nome: Optional[str] = None

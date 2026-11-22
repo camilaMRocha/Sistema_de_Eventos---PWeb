@@ -280,3 +280,38 @@ def excluir_evento(id_evento: int):
     finally:
         cursor.close()
         conn.close()
+
+@router.get("/publicos/busca")
+def listar_eventos_publicos():
+    conn = criar_conexao()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        sql = """
+            SELECT e.id_evento, e.nome_evento, e.formato, e.descricao_evento,
+                   e.data_hora_inicio, e.data_hora_termino, e.orcamento_estimado,
+                   cat.nome_categoria AS subcategoria,
+                   catpai.nome_categoria AS tipo_evento,
+                   cl.nome AS organizador,
+                   l.nome AS nome_local,
+                   l.cidade, l.estado,
+                   (SELECT COUNT(*) FROM ingresso WHERE id_evento = e.id_evento) AS total_lotes_ingresso,
+                   (SELECT MIN(preco) FROM ingresso WHERE id_evento = e.id_evento AND tipo_ingresso = 'Pago') AS menor_preco_ingresso,
+                   (SELECT COUNT(*) FROM ingresso WHERE id_evento = e.id_evento AND tipo_ingresso = 'Gratuito') AS possui_gratuito,
+                   (SELECT COALESCE(SUM(i.quantidade_total), 0) - COALESCE(SUM(iv.quantidade), 0)
+                    FROM ingresso i
+                    LEFT JOIN ingresso_venda iv ON iv.id_ingresso = i.id_ingresso
+                    WHERE i.id_evento = e.id_evento) AS total_ingressos_disponiveis
+            FROM evento e
+            JOIN categoria cat ON e.id_categoria = cat.id_categoria
+            LEFT JOIN categoria catpai ON cat.id_categoria_pai = catpai.id_categoria
+            JOIN cliente cl ON e.id_cliente = cl.id_cliente
+            LEFT JOIN reserva r ON r.id_evento = e.id_evento AND r.status_reserva <> 'Cancelado'
+            LEFT JOIN local l ON r.id_local = l.id_local
+            WHERE (e.visibilidade = 'Publico' OR (SELECT COUNT(*) FROM ingresso WHERE id_evento = e.id_evento) > 0)
+            ORDER BY e.data_hora_inicio ASC
+        """
+        cursor.execute(sql)
+        return cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()

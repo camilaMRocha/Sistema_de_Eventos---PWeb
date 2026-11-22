@@ -17,6 +17,7 @@ import {
   CheckCheck,
   Clock,
   ShieldCheck,
+  Ticket,
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -146,6 +147,15 @@ export default function Navbar() {
                     >
                       <Calendar size={18} />
                       Meus Eventos
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/meus-ingressos"
+                      className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                    >
+                      <Ticket size={18} />
+                      Meus Ingressos
                     </NavLink>
                   </li>
                   <li>
